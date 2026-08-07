@@ -1,0 +1,6 @@
+from typing import Any
+
+class BaseSettings:
+    def __init__(self, **values: Any) -> None: ...
+
+class SettingsConfigDict(dict[str, Any]): ...

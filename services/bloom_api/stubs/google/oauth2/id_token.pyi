@@ -1,0 +1,3 @@
+from typing import Any, Iterable
+
+def verify_oauth2_token(token: str, request: Any, audience: str | Iterable[str] | None = ...) -> dict[str, Any]: ...

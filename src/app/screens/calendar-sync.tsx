@@ -5,9 +5,11 @@ import { motion } from "motion/react";
 import { ArrowLeft, Calendar, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { SunnyMascot } from "../components/sunny-mascot";
+import { useLanguage } from "../contexts/LanguageContext";
 
 export function CalendarSync() {
   const navigate = useNavigate();
+  const { t, lang } = useLanguage();
 
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -52,7 +54,7 @@ export function CalendarSync() {
           >
             <ArrowLeft className="w-5 h-5 text-[#141D24]" />
           </button>
-          <h1 className="text-xl text-[#141D24]">synchronisation calendrier</h1>
+          <h1 className="text-xl text-[#141D24]">{t("calendar_sync_title") as string}</h1>
         </div>
       </div>
 
@@ -84,7 +86,7 @@ export function CalendarSync() {
               <div>
                 <div className="font-semibold text-[#141D24]">Google Calendar</div>
                 <div className="text-sm text-[#141D24]/60">
-                  {isConnected ? "connecté" : "non connecté"}
+                  {isConnected ? (t("calendar_sync_connected") as string) : (t("calendar_sync_disconnected") as string)}
                 </div>
               </div>
             </div>
@@ -101,15 +103,15 @@ export function CalendarSync() {
               disabled={isConnecting}
               className="w-full bg-[#3A7D4F] text-white py-4 rounded-xl hover:bg-[#3A7D4F]/90 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isConnecting ? "connexion en cours..." : "connecter avec Google"}
+              {isConnecting ? (t("calendar_sync_connecting") as string) : (t("calendar_sync_connect_google") as string)}
             </button>
           ) : (
             <div className="space-y-3">
               <div className="flex items-center justify-between p-4 bg-white rounded-xl">
                 <div>
-                  <div className="font-medium text-[#141D24]">synchronisation automatique</div>
+                  <div className="font-medium text-[#141D24]">{t("calendar_sync_auto_label") as string}</div>
                   <div className="text-sm text-[#141D24]/60">
-                    ajoute tes habitudes à Google Calendar
+                    {t("calendar_sync_auto_desc") as string}
                   </div>
                 </div>
                 <button
@@ -128,7 +130,7 @@ export function CalendarSync() {
 
               {lastSync && (
                 <div className="text-sm text-[#141D24]/60 text-center">
-                  dernière synchro : {lastSync.toLocaleTimeString("fr-FR")}
+                  {t("calendar_sync_last") as string} : {lastSync.toLocaleTimeString(lang === "fr" ? "fr-FR" : lang === "es" ? "es-ES" : "en-US")}
                 </div>
               )}
 
@@ -139,13 +141,13 @@ export function CalendarSync() {
                   className="flex-1 flex items-center justify-center gap-2 bg-white text-[#3A7D4F] py-3 rounded-xl border-2 border-[#3A7D4F]/20 hover:bg-[#3A7D4F]/5 transition-colors disabled:opacity-50"
                 >
                   <RefreshCw className={`w-4 h-4 ${isConnecting ? "animate-spin" : ""}`} />
-                  synchroniser maintenant
+                  {t("calendar_sync_now") as string}
                 </button>
                 <button
                   onClick={handleDisconnect}
                   className="px-6 py-3 bg-[#141D24]/5 text-[#141D24]/60 rounded-xl hover:bg-[#141D24]/10 transition-colors"
                 >
-                  déconnecter
+                  {t("calendar_sync_disconnect") as string}
                 </button>
               </div>
             </div>

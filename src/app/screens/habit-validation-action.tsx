@@ -1,0 +1,132 @@
+"use client";
+
+import { useNavigate, useParams } from "react-router-dom";
+import { motion } from "motion/react";
+import { Check, X, Bell } from "lucide-react";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+import type { Habit } from "../types/habit";
+import { SunnyMascot } from "../components/sunny-mascot";
+import { queueHabitCheckIn, incrementLocalPetals } from "../utils/offline-sync";
+import { playSound } from "../utils/audio";
+import { useAudio } from "../contexts/AudioContext";
+import { toast } from "sonner";
+
+export function HabitValidationAction() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { soundEnabled } = useAudio();
+  const [habits, setHabits] = useLocalStorage<Habit[]>("bloom-habits", []);
+
+  const habit = habits.find(h => h.id === id);
+
+  const handleValidate = async () => {
+    if (!habit) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const result = await queueHabitCheckIn({
+      habitId: habit.id,
+      date: today,
+    });
+
+    setHabits((prev) =>
+      prev.map((h) => {
+        if (h.id !== habit.id) return h;
+
+        const existingEntryIndex = h.history.findIndex((entry) => entry.date === result.logicalDate);
+        let nextHistory = [...h.history];
+
+        if (existingEntryIndex >= 0) {
+          nextHistory[existingEntryIndex] = {
+            ...nextHistory[existingEntryIndex],
+            completedCount: result.currentCount,
+          };
+        } else {
+          nextHistory.push({
+            date: result.logicalDate,
+            completedCount: result.currentCount,
+          });
+        }
+
+        return {
+          ...h,
+          streak: result.streak,
+          lastCheckIn: result.lastCheckIn,
+          history: nextHistory,
+        };
+      })
+    );
+
+    await incrementLocalPetals(1);
+    playSound("sounds/success-chime.mp3", soundEnabled);
+    toast.success(`Super ! ${habit.name} validé.`);
+    navigate("/dashboard");
+  };
+
+  const handleIgnore = () => {
+    navigate("/dashboard");
+  };
+
+  if (!habit) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
+        <Bell className="w-12 h-12 text-gray-200 mb-4" />
+        <h1 className="text-xl font-bold text-[#1C1917]">Oups !</h1>
+        <p className="text-gray-500 mb-8">Cette habitude n'existe plus ou a été supprimée.</p>
+        <button
+          onClick={() => navigate("/dashboard")}
+          className="px-8 py-3 bg-[#1C1917] text-white rounded-2xl font-bold"
+        >
+          Retour au tableau de bord
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center">
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="w-full max-w-sm"
+      >
+        <div className="mb-8">
+          <SunnyMascot mood="neutral" size={160} />
+        </div>
+
+        <h1 className="text-3xl font-black text-[#1C1917] mb-2">C'est l'heure !</h1>
+        <p className="text-lg font-medium text-[#1C1917]/60 mb-8">
+          Est-ce que tu as réalisé ton habitude <br/>
+          <span className="text-[#1C1917] font-bold">"{habit.name}"</span> ?
+        </p>
+
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            onClick={handleIgnore}
+            className="flex flex-col items-center justify-center gap-3 p-6 rounded-[32px] bg-gray-50 border border-gray-100 active:scale-95 transition-all group"
+          >
+            <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-sm group-active:bg-gray-100 transition-colors">
+              <X className="w-7 h-7 text-gray-400" />
+            </div>
+            <span className="font-bold text-gray-400">Ignorer</span>
+          </button>
+
+          <button
+            onClick={handleValidate}
+            className={`flex flex-col items-center justify-center gap-3 p-6 rounded-[32px] border active:scale-95 transition-all group ${
+              habit.mode === 'build' ? 'bg-green-50 border-green-100' : 'bg-purple-50 border-purple-100'
+            }`}
+          >
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+              habit.mode === 'build' ? 'bg-green-500' : 'bg-purple-500'
+            }`}>
+              <Check className="w-7 h-7 text-white" />
+            </div>
+            <span className={`font-bold ${
+              habit.mode === 'build' ? 'text-green-600' : 'text-purple-600'
+            }`}>Valider</span>
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}

@@ -1,10 +1,20 @@
 "use client";
 
-import { JSX, useState } from "react";
+import { JSX, useState, useMemo } from "react";
 import { motion } from "motion/react";
-import { Flame, CalendarDays, Sun, Lock } from "lucide-react";
+import { Flame, CalendarDays, Sun, Lock, Info, Crown } from "lucide-react";
 import { SunnyMascot } from "../components/sunny-mascot";
 import { useLanguage } from "../contexts/LanguageContext";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+import { useAuth } from "../contexts/AuthContext";
+import type { Habit } from "../types/habit";
+import { useNavigate } from "react-router-dom";
+
+/**
+ * ÉCRAN DES WIDGETS
+ * Permet de prévisualiser et de comprendre comment installer les widgets Bloom.
+ * Spécification 6.0 : Accès restreint selon le forfait.
+ */
 
 interface Widget {
   id: string;
@@ -19,9 +29,25 @@ interface Widget {
 
 export function Widgets() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const { session, isPremium } = useAuth();
+  const [habits] = useLocalStorage<Habit[]>("bloom-habits", []);
   const [added, setAdded] = useState<string[]>([]);
 
-  const toggle = (id: string) => {
+  // Calcul des données réelles pour la prévisualisation (Offline Logic Spec 7.4)
+  const stats = useMemo(() => {
+    const longestStreak = habits.length > 0 ? Math.max(...habits.map(h => h.streak), 0) : 0;
+    return { longestStreak };
+  }, [habits]);
+
+  /**
+   * Simule l'ajout d'un widget ou redirige vers le paywall si Premium requis.
+   */
+  const handleToggle = (id: string, premium: boolean) => {
+    if (premium && !isPremium) {
+      navigate("/upgrade");
+      return;
+    }
     setAdded((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
@@ -33,16 +59,16 @@ export function Widgets() {
       titleKey: "streak_widget",
       descKey: "streak_widget_desc",
       icon: Flame,
-      color: "hsl(var(--primary))",
-      bg: "hsl(var(--primary) / 0.1)",
+      color: "#F5C030",
+      bg: "rgba(245, 192, 48, 0.1)",
       preview: () => (
-        <div className="bg-card rounded-2xl p-4 flex items-center gap-3 shadow-sm">
-          <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-            <Flame className="w-5 h-5 text-primary" />
+        <div className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm border border-gray-100">
+          <div className="w-12 h-12 rounded-2xl bg-[#F5C030]/10 flex items-center justify-center">
+            <Flame className="w-6 h-6 text-[#F5C030]" />
           </div>
           <div>
-            <div className="text-2xl font-bold text-card-foreground">5</div>
-            <div className="text-xs text-muted-foreground">{t("streak_days") as string}</div>
+            <div className="text-3xl font-black text-[#1C1917]">{stats.longestStreak}</div>
+            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t("streak_days") as string}</div>
           </div>
         </div>
       ),
@@ -52,18 +78,14 @@ export function Widgets() {
       titleKey: "heatmap_widget",
       descKey: "heatmap_widget_desc",
       icon: CalendarDays,
-      color: "hsl(var(--secondary))",
-      bg: "hsl(var(--secondary) / 0.1)",
+      color: "#10B981",
+      bg: "rgba(16, 185, 129, 0.1)",
+      premium: true,
       preview: () => (
-        <div className="bg-card rounded-2xl p-4 shadow-sm">
-          <div className="grid grid-cols-7 gap-1">
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <div className="grid grid-cols-7 gap-1.5">
             {Array.from({ length: 28 }).map((_, i) => (
-              <div
-                key={i}
-                className={`w-4 h-4 rounded-sm ${
-                  Math.random() > 0.4 ? "bg-secondary" : "bg-border"
-                }`}
-              />
+              <div key={i} className={`w-3.5 h-3.5 rounded-[3px] ${ Math.random() > 0.4 ? "bg-green-500" : "bg-gray-100" }`} />
             ))}
           </div>
         </div>
@@ -74,11 +96,11 @@ export function Widgets() {
       titleKey: "sunny_widget",
       descKey: "sunny_widget_desc",
       icon: Sun,
-      color: "hsl(var(--accent))",
-      bg: "hsl(var(--accent) / 0.1)",
+      color: "#0085FF",
+      bg: "rgba(0, 133, 255, 0.1)",
       premium: true,
       preview: () => (
-        <div className="bg-gradient-to-br from-background to-accent/20 rounded-2xl p-4 flex items-center justify-center shadow-sm">
+        <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl p-4 flex items-center justify-center shadow-sm border border-blue-100">
           <SunnyMascot mood="blooming" size={64} />
         </div>
       ),
@@ -86,19 +108,31 @@ export function Widgets() {
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-6 py-4">
+    <div className="min-h-screen bg-white text-foreground pb-40 overflow-y-auto">
+      {/* En-tête fixe */}
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-50 px-6 py-5">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-xl text-foreground">{t("widgets_title") as string}</h1>
-          <p className="text-sm text-muted-foreground">{t("widgets_subtitle") as string}</p>
+          <h1 className="text-2xl font-bold text-[#1C1917]">{t("widgets_title") as string}</h1>
+          <p className="text-sm font-medium text-gray-400">{t("widgets_subtitle") as string}</p>
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-6 py-6 space-y-4">
+      <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
+        {/* Instructions d'installation (Guide Utilisateur) */}
+        <div className="bg-blue-50 border border-blue-100 rounded-3xl p-5 flex gap-4 items-start shadow-sm">
+           <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+           <div>
+             <h4 className="font-bold text-blue-900 text-sm mb-1">Comment installer ?</h4>
+             <p className="text-xs font-medium text-blue-700/70 leading-relaxed">
+               Maintenez votre doigt sur une zone vide de votre écran d'accueil, appuyez sur le bouton **(+)** ou **"Widgets"** et recherchez **Bloom**.
+             </p>
+           </div>
+        </div>
+
+        {/* Liste des Widgets disponibles */}
         {widgets.map((widget, i) => {
-          const Icon = widget.icon;
           const isAdded = added.includes(widget.id);
+          const isLocked = widget.premium && !isPremium;
 
           return (
             <motion.div
@@ -106,47 +140,35 @@ export function Widgets() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08 }}
-              className="bg-card text-card-foreground rounded-3xl p-6 shadow-sm"
+              className={`bg-white border rounded-[32px] p-6 shadow-sm transition-all ${isLocked ? 'border-gray-100 opacity-60' : 'border-gray-100'}`}
             >
-              {/* Preview */}
-              <div className="mb-4">{widget.preview()}</div>
+              {/* Prévisualisation dynamique */}
+              <div className="mb-6">{widget.preview()}</div>
 
-              {/* Info + Action */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-2xl flex items-center justify-center"
-                    style={{ background: widget.bg }}
-                  >
-                    <Icon className="w-5 h-5" style={{ color: widget.color }} />
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner" style={{ background: widget.bg }}>
+                    <widget.icon className="w-6 h-6" style={{ color: widget.color }} />
                   </div>
                   <div>
-                    <div className="font-medium text-sm">
+                    <div className="font-bold text-[#1C1917] flex items-center gap-1.5">
                       {t(widget.titleKey) as string}
+                      {widget.premium && <Crown size={12} className="text-[#F5C030]" />}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {t(widget.descKey) as string}
-                    </div>
+                    <div className="text-xs font-medium text-gray-400">{t(widget.descKey) as string}</div>
                   </div>
                 </div>
 
-                {widget.premium ? (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-3 py-2 rounded-full">
-                    <Lock className="w-3 h-3" />
-                    {t("coming_soon") as string}
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => toggle(widget.id)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                      isAdded
-                        ? "bg-secondary/20 text-secondary"
-                        : "bg-primary text-primary-foreground hover:bg-primary/90"
-                    }`}
-                  >
-                    {isAdded ? (t("added") as string) : (t("add_widget") as string)}
-                  </button>
-                )}
+                {/* Bouton d'action avec gestion du verrouillage Premium */}
+                <button
+                  onClick={() => handleToggle(widget.id, !!widget.premium)}
+                  className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${
+                    isLocked ? "bg-gray-50 text-gray-300 border border-gray-100" :
+                    isAdded ? "bg-green-50 text-green-600 border border-green-100" : "bg-[#1C1917] text-white shadow-lg shadow-[#1C1917]/20"
+                  }`}
+                >
+                  {isLocked ? <Lock size={12} /> : isAdded ? (t("added") as string) : (t("add_widget") as string)}
+                </button>
               </div>
             </motion.div>
           );
@@ -155,4 +177,3 @@ export function Widgets() {
     </div>
   );
 }
-

@@ -16,21 +16,22 @@ const LANGS: { code: Language; label: string; flag: string }[] = [
   { code: "es", label: "Español", flag: "🇪🇸" },
 ];
 
-const THEME_DETAILS: Record<Theme, { label: string; icon: string }> = {
-  light: { label: "Sunbeam", icon: "☀️" },
-  dark: { label: "Deep Night", icon: "🌙" },
-  forest: { label: "Forest", icon: "🌲" },
-  ocean: { label: "Ocean", icon: "🌊" },
-  custom: { label: "Custom", icon: "🎨" },
+const THEME_DETAILS: Record<Theme, { labelKey: string; icon: string }> = {
+  system: { labelKey: "theme_system", icon: "📱" },
+  light: { labelKey: "dark_mode_off", icon: "☀️" },
+  dark: { labelKey: "dark_mode_on", icon: "🌙" },
+  forest: { labelKey: "forest", icon: "🌲" },
+  ocean: { labelKey: "ocean", icon: "🌊" },
+  custom: { labelKey: "custom_colors", icon: "🎨" },
 };
 
 export function Settings() {
   const navigate = useNavigate();
   const { t, lang, setLang } = useLanguage();
-  const { theme, setTheme, customColors, setCustomColor } = useTheme();
+  const { theme, setTheme, resolvedTheme, customColors, setCustomColor } = useTheme();
   const { soundEnabled, toggleSound } = useAudio();
   const { animationsEnabled, toggleAnimations } = useAnimation();
-  const [notifications, setNotifications] = useState(true); // Ceci reste un état local
+  const [notifications, setNotifications] = useState(true);
 
   const notificationExamples = [
     "good morning. sunny's up and waiting — don't leave them on read.",
@@ -39,7 +40,7 @@ export function Settings() {
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24">
+    <div className="min-h-screen bg-white pb-32">
       <div className="sticky top-0 z-10 border-b border-border/70 bg-background/90 backdrop-blur-xl px-6 py-4">
         <div className="max-w-3xl mx-auto">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">{t("settings_title") as string}</p>
@@ -48,13 +49,14 @@ export function Settings() {
       </div>
 
       <div className="max-w-3xl mx-auto px-6 py-6 space-y-4">
+        {/* Bloom Premium Banner */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="group relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-[#E8920A] to-[#F5C030] p-5 text-white shadow-2xl shadow-orange-500/10 cursor-pointer"
           onClick={() => navigate("/upgrade")}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
         >
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-2">
@@ -64,7 +66,7 @@ export function Settings() {
             <p className="text-sm text-white/90 mb-3">
               {t("premium_desc") as string}
             </p>
-            <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full text-sm">
+            <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full text-sm font-medium backdrop-blur-md">
               <Sparkles className="w-4 h-4" />
               <span>{t("discover") as string}</span>
             </div>
@@ -76,18 +78,18 @@ export function Settings() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="rounded-[28px] border border-border/60 bg-card/90 p-4 shadow-lg"
+          className="rounded-[28px] border border-border/60 bg-card/90 p-4 shadow-lg backdrop-blur-sm"
         >
           <Accordion type="multiple" defaultValue={["appearance"]} className="w-full">
             <AccordionItem value="appearance" className="border-none">
               <AccordionTrigger className="px-2 py-3 hover:no-underline">
-                <div>
+                <div className="text-left">
                   <h2 className="text-lg font-semibold text-card-foreground">{t("appearance") as string}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">thèmes, sons et animations dans un seul espace</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{t("appearance_desc") as string}</p>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-2 pb-2">
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                <div className="grid grid-cols-3 gap-3 md:grid-cols-6">
                   {themes.map((themeKey) => (
                     <button
                       key={themeKey}
@@ -95,31 +97,35 @@ export function Settings() {
                       className={`flex flex-col items-center gap-2 rounded-[20px] border-2 p-3 text-center transition-all ${
                         theme === themeKey
                           ? "border-primary bg-primary/10 shadow-sm"
-                          : "border-border/60 bg-muted hover:border-primary/80 hover:bg-muted/80"
+                          : "border-border/40 bg-muted/30 hover:border-primary/40 hover:bg-muted/50"
                       }`}
                     >
-                      <span className="text-2xl">{THEME_DETAILS[themeKey].icon}</span>
-                      <span className={`text-xs font-medium ${theme === themeKey ? "text-primary" : "text-muted-foreground"}`}>
-                        {THEME_DETAILS[themeKey].label}
+                      <span className="text-xl">{THEME_DETAILS[themeKey].icon}</span>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${theme === themeKey ? "text-primary" : "text-muted-foreground"}`}>
+                        {t(THEME_DETAILS[themeKey].labelKey as any) as string}
                       </span>
                     </button>
                   ))}
                 </div>
 
                 {theme === "custom" && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-4 space-y-3 rounded-2xl border border-border/60 bg-background/70 p-4">
-                    <h3 className="text-sm font-medium text-card-foreground">Couleurs personnalisées</h3>
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="mt-4 space-y-3 rounded-2xl border border-border/60 bg-background/50 p-4"
+                  >
+                    <h3 className="text-sm font-semibold text-card-foreground">{t("custom_colors") as string}</h3>
                     <div className="flex items-center justify-between">
-                      <label htmlFor="primary-color" className="text-sm text-muted-foreground">Couleur principale</label>
-                      <input id="primary-color" type="color" value={customColors['--primary']} onChange={(e) => setCustomColor('--primary', e.target.value)} className="h-10 w-10 cursor-pointer rounded-md border border-border bg-card p-1"/>
+                      <label htmlFor="primary-color" className="text-sm text-muted-foreground">{t("primary_color") as string}</label>
+                      <input id="primary-color" type="color" value={customColors['--primary']} onChange={(e) => setCustomColor('--primary', e.target.value)} className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-card p-1"/>
                     </div>
                     <div className="flex items-center justify-between">
-                      <label htmlFor="background-color" className="text-sm text-muted-foreground">Arrière-plan</label>
-                      <input id="background-color" type="color" value={customColors['--background']} onChange={(e) => setCustomColor('--background', e.target.value)} className="h-10 w-10 cursor-pointer rounded-md border border-border bg-card p-1"/>
+                      <label htmlFor="background-color" className="text-sm text-muted-foreground">{t("background_color") as string}</label>
+                      <input id="background-color" type="color" value={customColors['--background']} onChange={(e) => setCustomColor('--background', e.target.value)} className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-card p-1"/>
                     </div>
                     <div className="flex items-center justify-between">
-                      <label htmlFor="text-color" className="text-sm text-muted-foreground">Texte</label>
-                      <input id="text-color" type="color" value={customColors['--foreground']} onChange={(e) => setCustomColor('--foreground', e.target.value)} className="h-10 w-10 cursor-pointer rounded-md border border-border bg-card p-1"/>
+                      <label htmlFor="text-color" className="text-sm text-muted-foreground">{t("text_color") as string}</label>
+                      <input id="text-color" type="color" value={customColors['--foreground']} onChange={(e) => setCustomColor('--foreground', e.target.value)} className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-card p-1"/>
                     </div>
                   </motion.div>
                 )}

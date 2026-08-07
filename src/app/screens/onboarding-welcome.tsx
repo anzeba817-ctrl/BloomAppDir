@@ -4,11 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { SunnyMascot } from "../components/sunny-mascot";
 import { motion } from "motion/react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { useLanguage } from "../contexts/LanguageContext";
 // @ts-ignore: allow importing image asset without type declaration
 import LogoImg from "../../imports/Logo.png";
 
 export function OnboardingWelcome() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-transparent px-4 py-10 sm:px-6">
@@ -25,9 +27,9 @@ export function OnboardingWelcome() {
         <div className="space-y-5 text-center">
           <div className="space-y-2">
             <p className="text-sm font-medium uppercase tracking-[0.24em] text-primary">Bloom</p>
-            <h1 className="text-2xl font-semibold text-foreground">hello, je m'appelle sunny bloom.</h1>
+            <h1 className="text-2xl font-semibold text-foreground">{t("onboarding_welcome_title") as string}</h1>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Une expérience douce pour suivre tes habitudes, te célébrer et avancer à ton rythme, sans pression.
+              {t("onboarding_welcome_subtitle") as string}
             </p>
           </div>
 
@@ -37,7 +39,7 @@ export function OnboardingWelcome() {
             onClick={() => navigate("/onboarding/mode")}
             className="w-full rounded-2xl bg-gradient-to-r from-primary to-[#F5C030] px-6 py-4 font-semibold text-white shadow-lg shadow-primary/20 transition-all duration-200 hover:shadow-xl"
           >
-            commencer doucement
+            {t("onboarding_welcome_cta") as string}
           </motion.button>
         </div>
 

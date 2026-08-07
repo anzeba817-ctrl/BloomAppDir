@@ -1,0 +1,14 @@
+{
+  "python.defaultInterpreterPath": "C:/Users/alleg/AppData/Local/Programs/Python/Python312/python.exe",
+  "python.analysis.extraPaths": [
+    "services/bloom_api",
+    "services/bloom_api/stubs"
+  ],
+"python.analysis.stubPath": "services/bloom_api/stubs",
+"chat.tools.terminal.autoApprove": {
+    "npm --prefix \"mobile/rn-app\"": true,
+    "npm --prefix \"c:/BLOOM": true,
+    "npx --prefix \"c:/BLOOM": true,
+    ".\\.venv312\\Scripts\\python.exe": true
+}
+}

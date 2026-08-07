@@ -4,9 +4,11 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { Lock } from "lucide-react";
+import { useLanguage } from "../contexts/LanguageContext";
 
 export function OnboardingHabit() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const location = useLocation();
   const mode = location.state?.mode || "build";
   const guided = location.state?.guided === true;
@@ -14,7 +16,11 @@ export function OnboardingHabit() {
   const [frequency, setFrequency] = useState("daily");
 
   const modeColor = guided ? "#F59E0B" : mode === "build" ? "#3A7D4F" : "#6B4FA0";
-  const modeTitle = guided ? "mode assisté" : mode === "build" ? "mode encrage" : "mode sevrage";
+  const modeTitle = guided
+    ? (t("onboarding_suggest_guided") as string)
+    : mode === "build"
+      ? (t("onboarding_suggest_build") as string)
+      : (t("onboarding_suggest_quit") as string);
 
   const handleCreate = () => {
     if (habitName.trim()) {
@@ -41,13 +47,13 @@ export function OnboardingHabit() {
         >
           {modeTitle}
         </div>
-        <h1 className="text-3xl mb-2">crée ta première habitude</h1>
+        <h1 className="text-3xl mb-2">{t("onboarding_create_title") as string}</h1>
         <p className="text-muted-foreground">
           {guided
-            ? "on commence par une seule petite action, très simple à tenir."
+            ? (t("onboarding_suggest_small") as string)
             : mode === "build"
-              ? "quelle habitude veux-tu construire ?"
-              : "de quelle habitude veux-tu te libérer ?"}
+              ? (t("onboarding_mode_build_desc") as string)
+              : (t("onboarding_mode_quit_desc") as string)}
         </p>
       </motion.div>
 
@@ -117,7 +123,7 @@ export function OnboardingHabit() {
           disabled={!habitName.trim()}
           className="w-full bg-primary text-primary-foreground px-8 py-4 rounded-2xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
         >
-          créer et commencer
+          {t("onboarding_create_cta") as string}
         </motion.button>
       </motion.div>
 
@@ -128,7 +134,7 @@ export function OnboardingHabit() {
         onClick={() => navigate(-1)}
         className="mt-8 text-muted-foreground hover:text-foreground transition-colors"
       >
-        ← retour
+        ← {t("onboarding_back") as string}
       </motion.button>
     </div>
   );

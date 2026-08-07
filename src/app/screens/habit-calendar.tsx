@@ -1,174 +1,170 @@
 "use client";
 
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
-import { ArrowLeft, CheckCircle2, Circle } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Share2, Users, Zap, Plus } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
 import { DayPicker } from "react-day-picker";
+import type { DayContentProps } from "react-day-picker";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-
-interface Habit {
-  id: string;
-  name: string;
-  mode: "build" | "quit";
-  streak: number;
-  lastCheckIn: string | null;
-  history: Array<{ date: string; mood?: string; note?: string }>;
-}
+import { SunnyMascot } from "../components/sunny-mascot";
+import type { Habit } from "../types/habit";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+import { useLanguage } from "../contexts/LanguageContext";
 
 export function HabitCalendar() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const habit = location.state?.habit as Habit | undefined;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { t } = useLanguage();
+  const [habits] = useLocalStorage<Habit[]>("bloom-habits", []);
 
+  const [currentView, setCurrentView] = useState<"build" | "quit">((searchParams.get("mode") as "build" | "quit") || "build");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [completedDates, setCompletedDates] = useState<string[]>(
-    habit?.history.map(h => h.date) || []
-  );
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
-  const handleDayClick = (date: Date | undefined) => {
-    if (!date) return;
-    setSelectedDate(date);
-
-    const dateStr = format(date, "yyyy-MM-dd");
-
-    if (completedDates.includes(dateStr)) {
-      // Uncheck
-      setCompletedDates(completedDates.filter(d => d !== dateStr));
-    } else {
-      // Check
-      setCompletedDates([...completedDates, dateStr]);
+  useEffect(() => {
+    const modeParam = searchParams.get("mode");
+    if (modeParam && (modeParam === "build" || modeParam === "quit")) {
+      setCurrentView(modeParam as "build" | "quit");
     }
+  }, [searchParams]);
+
+  const setMode = (mode: "build" | "quit") => {
+    setSearchParams({ mode }, { replace: true });
   };
 
-  const modifiers = {
-    completed: completedDates.map(dateStr => new Date(dateStr)),
+  const checkInsByDate = useMemo(() => {
+    const map: Record<string, { mode: "build" | "quit", name: string, count: number, total: number }[]> = {};
+    habits.forEach(habit => {
+      if (habit.mode !== currentView) return;
+      habit.history.forEach(entry => {
+        if (!map[entry.date]) map[entry.date] = [];
+        map[entry.date].push({
+          mode: habit.mode,
+          name: habit.name,
+          count: entry.completedCount ?? 1,
+          total: habit.repetitionsPerDay || 1
+        });
+      });
+    });
+    return map;
+  }, [habits, currentView]);
+
+  const DayContent = ({ date }: DayContentProps) => {
+    const dateKey = format(date, "yyyy-MM-dd");
+    const dayCheckIns = checkInsByDate[dateKey] || [];
+    const hasActivity = dayCheckIns.length > 0;
+
+    return (
+      <div className="relative w-full h-full flex items-center justify-center">
+        <span className="z-10 text-sm">{date.getDate()}</span>
+        {hasActivity && (
+          <div className={`absolute bottom-1 w-1 h-1 rounded-full shadow-sm ${currentView === 'build' ? 'bg-green-500' : 'bg-purple-500'}`} />
+        )}
+      </div>
+    );
   };
 
-  const modifiersStyles = {
-    completed: {
-      backgroundColor: habit?.mode === "build" ? "#3A7D4F" : "#6B4FA0",
-      color: "white",
-      fontWeight: 600,
-    },
-  };
+  const selectedDateKey = format(selectedDate, "yyyy-MM-dd");
+  const dayOfWeek = selectedDate.getDay();
+
+  const selectedDayHabits = useMemo(() => {
+    return habits.filter(h => {
+      if (h.mode !== currentView) return false;
+
+      // Check if habit is active on this day
+      if (h.frequency === "daily") return true;
+      if (h.frequency === "weekly" || h.frequency === "custom") {
+        return h.selectedDays?.includes(dayOfWeek) ?? true;
+      }
+      return true;
+    }).map(h => {
+      const entry = h.history.find(e => e.date === selectedDateKey);
+      return {
+        ...h,
+        completedCount: entry?.completedCount ?? 0
+      };
+    });
+  }, [habits, currentView, selectedDateKey, dayOfWeek]);
 
   return (
-    <div className="min-h-screen bg-[#FEF8F0]">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#FEF8F0]/95 backdrop-blur-sm border-b border-[#141D24]/10 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate(-1)}
-              className="p-2 hover:bg-[#141D24]/5 rounded-full transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-[#141D24]" />
-            </button>
-            <div>
-              <h1 className="text-xl text-[#141D24]">historique</h1>
-              {habit && (
-                <p className="text-sm text-[#141D24]/60">{habit.name}</p>
-              )}
-            </div>
-          </div>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-4 py-2 bg-[#3A7D4F] text-white rounded-xl hover:bg-[#3A7D4F]/90 transition-colors"
-          >
-            sauvegarder
-          </button>
-        </div>
+    <div className="min-h-screen bg-white">
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md px-6 py-4 flex items-center gap-4 border-b border-gray-50">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-1.5 bg-gray-50 rounded-full border border-gray-100 active:scale-90 transition-all"
+        >
+          <ArrowLeft className="w-5 h-5 text-[#1C1917]" />
+        </button>
+        <h1 className="text-lg font-bold text-[#1C1917]">Suivi des habitudes</h1>
       </div>
 
-      <div className="max-w-2xl mx-auto px-6 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-3xl p-6 shadow-lg"
-        >
-          <div className="mb-6">
-            <h2 className="text-lg mb-2 text-[#141D24]">marque tes jours réussis</h2>
-            <p className="text-sm text-[#141D24]/60">
-              clique sur un jour pour le marquer comme complété ou le retirer
-            </p>
-          </div>
+      <div className="max-w-xl mx-auto px-6 py-6 pb-32">
+        {/* Mode Switcher */}
+        <div className="mb-8 bg-[#F3F4F6] p-1 rounded-full flex relative">
+          <button
+            onClick={() => setMode("build")}
+            className={`flex-1 py-3 rounded-full text-sm font-bold transition-all relative z-10 flex items-center justify-center gap-2 ${
+              currentView === "build" ? "bg-[#10B981] text-white shadow-md" : "text-[#1C1917]/40"
+            }`}
+          >
+            {t("build_mode") as string}
+          </button>
+          <button
+            onClick={() => setMode("quit")}
+            className={`flex-1 py-3 rounded-full text-sm font-bold transition-all relative z-10 flex items-center justify-center gap-2 ${
+              currentView === "quit" ? "bg-[#8B5CF6] text-white shadow-md" : "text-[#1C1917]/40"
+            }`}
+          >
+            {t("quit_mode") as string}
+          </button>
+        </div>
 
-          <div className="flex justify-center">
-            <DayPicker
-              mode="single"
-              selected={selectedDate}
-              onDayClick={handleDayClick}
-              modifiers={modifiers}
-              modifiersStyles={modifiersStyles}
-              locale={fr}
-              className="!font-sans"
-              styles={{
-                caption: { color: "#141D24", fontWeight: 600, marginBottom: "1rem" },
-                head_cell: { color: "#141D24", opacity: 0.6, fontWeight: 500 },
-                cell: { padding: "0.5rem" },
-                day: {
-                  borderRadius: "0.75rem",
-                  width: "2.5rem",
-                  height: "2.5rem",
-                  fontSize: "0.875rem",
-                },
-              }}
-            />
-          </div>
+        <div className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 mb-8">
+          <DayPicker
+            mode="single"
+            month={currentMonth}
+            onMonthChange={setCurrentMonth}
+            selected={selectedDate}
+            onDayClick={setSelectedDate}
+            components={{ DayContent }}
+            locale={fr}
+            className="!font-sans m-0"
+            styles={{
+              head_cell: { color: "#94979f", fontWeight: 700, fontSize: "0.75rem" },
+              day: { borderRadius: "14px", width: "2.6rem", height: "2.6rem", fontWeight: 600 },
+              selected: { backgroundColor: "#1C1917", color: "white" }
+            }}
+          />
+        </div>
 
-          {/* Legend */}
-          <div className="mt-8 pt-6 border-t border-[#141D24]/10 space-y-3">
-            <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{
-                  backgroundColor: habit?.mode === "build" ? "#3A7D4F" : "#6B4FA0",
-                  color: "white"
-                }}
-              >
-                <CheckCircle2 className="w-5 h-5" />
-              </div>
-              <div className="text-sm text-[#141D24]">
-                jours complétés ({completedDates.length})
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#141D24]/5">
-                <Circle className="w-5 h-5 text-[#141D24]/40" />
-              </div>
-              <div className="text-sm text-[#141D24]/60">
-                jours non complétés
-              </div>
-            </div>
-          </div>
-        </motion.div>
+        <div className="space-y-6">
+          <div className="px-2">
+            <h2 className="text-xs font-bold text-[#1C1917]/40 uppercase tracking-widest mb-4">Habitudes du {format(selectedDate, "d MMMM", { locale: fr })}</h2>
 
-        {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mt-6 grid grid-cols-3 gap-4"
-        >
-          <div className="bg-white rounded-2xl p-4 shadow-lg text-center">
-            <div className="text-2xl mb-1 text-[#141D24]">{habit?.streak || 0}</div>
-            <div className="text-xs text-[#141D24]/60">série actuelle</div>
+            {selectedDayHabits.length > 0 ? (
+              <div className="space-y-3">
+                {selectedDayHabits.map((h) => (
+                  <div key={h.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${h.completedCount >= h.repetitionsPerDay ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100/50'}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full ${currentView === 'build' ? 'bg-green-500' : 'bg-purple-500'}`} />
+                      <span className="font-bold text-[#1C1917]">{h.name}</span>
+                    </div>
+                    <span className={`text-xs font-bold ${h.completedCount >= h.repetitionsPerDay ? 'text-green-600' : 'text-[#1C1917]/40'}`}>
+                      {h.completedCount}/{h.repetitionsPerDay} complété
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-10 bg-gray-50 rounded-[32px] border-2 border-dashed border-gray-200">
+                <p className="text-[#1C1917]/30 text-sm font-medium">Aucune habitude prévue ce jour.</p>
+              </div>
+            )}
           </div>
-          <div className="bg-white rounded-2xl p-4 shadow-lg text-center">
-            <div className="text-2xl mb-1 text-[#141D24]">{completedDates.length}</div>
-            <div className="text-xs text-[#141D24]/60">total jours</div>
-          </div>
-          <div className="bg-white rounded-2xl p-4 shadow-lg text-center">
-            <div className="text-2xl mb-1 text-[#141D24]">
-              {completedDates.length > 0 ? Math.round((completedDates.length / 30) * 100) : 0}%
-            </div>
-            <div className="text-xs text-[#141D24]/60">ce mois</div>
-          </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
 }
-

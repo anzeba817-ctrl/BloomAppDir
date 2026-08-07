@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "035a52b2-c96a-489e-ab50-1e76d1657320"
+      }
+    },
+    "owner": "allegras-team",
+    "slug": "allegra",
+    "ios": {
+      "bundleIdentifier": "com.allegrasteam.allegra",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}

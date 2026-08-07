@@ -3,17 +3,10 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, Play, Pause, RotateCcw, Calendar, TrendingUp, Lightbulb, Clock } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { SunnyMascot } from "../components/sunny-mascot";
-
-interface Habit {
-  id: string;
-  name: string;
-  mode: "build" | "quit";
-  streak: number;
-  lastCheckIn: string | null;
-  history: Array<{ date: string; mood?: string; note?: string }>;
-}
+import type { Habit } from "../types/habit";
+import { getEffortLabel, getEffortScore } from "../utils/habit-effort";
 
 export function HabitDetail() {
   const navigate = useNavigate();
@@ -24,6 +17,21 @@ export function HabitDetail() {
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [targetMinutes, setTargetMinutes] = useState(10);
   const [showTip, setShowTip] = useState(0);
+
+  useEffect(() => {
+    if (habit?.durationMinutes && habit.durationMinutes > 0) {
+      setTargetMinutes(habit.durationMinutes);
+    }
+  }, [habit?.durationMinutes]);
+
+  const effortScore = useMemo(() => (habit ? getEffortScore(habit) : 0), [habit]);
+  const effortLabel = useMemo(() => getEffortLabel(effortScore), [effortScore]);
+  const encouragement = useMemo(() => {
+    if (!habit) return "";
+    if (habit.streak >= 14) return `Tu tiens un rythme fort: ${habit.streak} jours, ${effortLabel}.`;
+    if (habit.streak >= 3) return `Belle constance. Continue ce ${effortLabel} aujourd'hui.`;
+    return `Mini action maintenant = progression reelle. Continue avec un ${effortLabel}.`;
+  }, [effortLabel, habit]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -111,6 +119,15 @@ export function HabitDetail() {
             mood={timerSeconds > 0 ? "growing" : "neutral"}
             size={140}
           />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-3xl border border-[#141D24]/10 bg-white p-5 text-sm text-[#4f545e] shadow-lg"
+        >
+          <p><span className="font-semibold text-[#ff8f4a]">Sunny:</span> {encouragement}</p>
+          <p className="mt-2 text-xs text-[#141D24]/50">niveau actuel: {effortLabel}</p>
         </motion.div>
 
         {/* Timer */}

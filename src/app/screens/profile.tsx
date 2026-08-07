@@ -2,135 +2,194 @@
 
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
-import { Calendar } from "lucide-react";
+import { Calendar, Sparkles, Lock, TrendingUp } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../components/ui/accordion";
 import { SunnyMascot } from "../components/sunny-mascot";
 import { useLanguage } from "../contexts/LanguageContext";
+import { useAuth } from "../contexts/AuthContext";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+import type { Habit } from "../types/habit";
+import { readLocalCurrency } from "../utils/offline-sync";
+import { useEffect, useState, useMemo } from "react";
+import { format, subDays, startOfToday, eachDayOfInterval } from "date-fns";
 
+/**
+ * Écran Profil : Affiche les statistiques utilisateur et l'historique d'activité.
+ * Gère les restrictions d'accès aux analyses avancées selon le forfait.
+ */
 export function Profile() {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { session, logout } = useAuth();
+  const user = session.user;
+  const userPlan = user?.plan || 'seedling';
+  const isPremium = userPlan !== 'seedling';
 
-  // Generate mock heatmap data for the year
-  const generateYearHeatmap = () => {
-    const days = [];
-    const today = new Date();
-    for (let i = 364; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const hasActivity = Math.random() > 0.4;
-      const intensity = hasActivity ? Math.floor(Math.random() * 4) + 1 : 0;
-      days.push({
-        date: date.toISOString().split("T")[0],
-        intensity,
+  const [habits] = useLocalStorage<Habit[]>("bloom-habits", []);
+  const [petals, setPetals] = useState(0);
+
+  useEffect(() => {
+    void (async () => {
+      const currency = await readLocalCurrency();
+      setPetals(currency.petales);
+    })();
+  }, []);
+
+  const stats = useMemo(() => {
+    const activeHabits = habits.length;
+
+    // Total days of activity
+    const allDates = new Set<string>();
+    habits.forEach(h => {
+      h.history.forEach(entry => allDates.add(entry.date));
+    });
+    const totalDays = allDates.size;
+
+    // Heatmap data
+    const today = startOfToday();
+    const startDate = subDays(today, 364);
+    const dateRange = eachDayOfInterval({ start: startDate, end: today });
+
+    const heatmapData = dateRange.map(date => {
+      const dateStr = format(date, "yyyy-MM-dd");
+      let totalCompletions = 0;
+      habits.forEach(h => {
+        const entry = h.history.find(e => e.date === dateStr);
+        if (entry) totalCompletions += entry.completedCount ?? 1;
       });
-    }
-    return days;
-  };
+      const intensity = totalCompletions === 0 ? 0 : Math.min(Math.ceil(totalCompletions / 2), 4);
+      return { date: dateStr, intensity };
+    });
 
-  const heatmapData = generateYearHeatmap();
+    // Insights
+    const longestStreak = habits.length > 0 ? Math.max(...habits.map(h => h.streak), 0) : 0;
+    const rawDaysLabel = t("days_label");
+    const rawMonthsLabel = t("months_label");
+    const daysLabel = Array.isArray(rawDaysLabel) ? (rawDaysLabel as string[]) : [];
+    const monthsLabel = Array.isArray(rawMonthsLabel) ? (rawMonthsLabel as string[]) : [];
+
+    return {
+      activeHabits,
+      totalDays,
+      heatmapData,
+      longestStreak,
+      daysLabel,
+      monthsLabel
+    };
+  }, [habits, t]);
 
   const getColorForIntensity = (intensity: number) => {
-    if (intensity === 0) return "bg-border";
-    if (intensity === 1) return "bg-secondary/30";
-    if (intensity === 2) return "bg-secondary/60";
-    if (intensity === 3) return "bg-secondary/80";
-    return "bg-secondary";
+    if (intensity === 0) return "bg-gray-100";
+    if (intensity === 1) return "bg-green-100";
+    if (intensity === 2) return "bg-green-300";
+    if (intensity === 3) return "bg-green-500";
+    return "bg-green-700";
   };
 
-  // Group by weeks
   const weeks: Array<Array<{ date: string; intensity: number }>> = [];
-  for (let i = 0; i < heatmapData.length; i += 7) {
-    weeks.push(heatmapData.slice(i, i + 7));
+  for (let i = 0; i < stats.heatmapData.length; i += 7) {
+    weeks.push(stats.heatmapData.slice(i, i + 7));
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24">
-      <div className="sticky top-0 z-10 border-b border-border/70 bg-background/90 px-6 py-4 backdrop-blur-sm">
+    <div className="min-h-screen bg-white text-foreground pb-40 overflow-y-auto">
+      {/* Header */}
+      <div className="sticky top-0 z-10 border-b border-gray-50 bg-white/80 backdrop-blur-md px-6 py-4">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">profil</p>
-            <h1 className="text-xl font-semibold text-foreground">{t("profile_title") as string}</h1>
+            <h1 className="text-xl font-bold text-[#1C1917]">{t("profile_title") as string}</h1>
           </div>
           <button
             onClick={() => navigate("/settings")}
-            className="rounded-full border border-border/70 bg-card/70 px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="rounded-full border border-gray-100 bg-gray-50 px-4 py-2 text-sm font-bold text-[#1C1917]/60 transition-colors hover:text-[#1C1917]"
           >
             réglages
           </button>
         </div>
       </div>
 
-      <div className="mx-auto max-w-4xl space-y-5 px-5 py-6 sm:px-6">
+      <div className="mx-auto max-w-4xl space-y-6 px-5 py-8 sm:px-6">
+        {/* User Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-[32px] border border-border/60 bg-gradient-to-br from-background via-card/80 to-secondary/10 p-6 text-center shadow-sm"
+          className="rounded-[32px] border border-gray-100 bg-white p-8 text-center shadow-sm"
         >
-          <SunnyMascot mood="blooming" size={104} className="mx-auto mb-4" />
-          <h2 className="mb-2 text-2xl font-semibold">{t("your_journey") as string}</h2>
-          <p className="text-muted-foreground">{t("member_since") as string}</p>
+          <SunnyMascot mood="blooming" size={104} className="mx-auto mb-6" />
+          <h2 className="mb-2 text-2xl font-bold text-[#1C1917]">{user?.displayName || t("your_journey")}</h2>
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{userPlan}</span>
+            {!isPremium && (
+              <button
+                onClick={() => navigate("/upgrade")}
+                className="text-[10px] font-black bg-[#F5C030] text-white px-2 py-0.5 rounded-full uppercase"
+              >
+                Passer Pro
+              </button>
+            )}
+          </div>
 
-          <div className="mt-6 grid gap-3 md:grid-cols-3">
-            <div className="rounded-[22px] border border-secondary/20 bg-secondary/10 p-4">
-              <div className="text-3xl font-bold text-secondary">5</div>
-              <div className="mt-1 text-sm text-muted-foreground">{t("active_habits") as string}</div>
+          <div className="grid gap-3 grid-cols-3">
+            <div className="rounded-[24px] bg-gray-50 p-4 border border-gray-100">
+              <div className="text-2xl font-black text-[#1C1917]">{stats.activeHabits}</div>
+              <div className="mt-1 text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-tight">{t("active_habits") as string}</div>
             </div>
-            <div className="rounded-[22px] border border-primary/20 bg-primary/10 p-4">
-              <div className="text-3xl font-bold text-primary">127</div>
-              <div className="mt-1 text-sm text-muted-foreground">{t("total_days") as string}</div>
+            <div className="rounded-[24px] bg-gray-50 p-4 border border-gray-100">
+              <div className="text-2xl font-black text-[#1C1917]">{stats.totalDays}</div>
+              <div className="mt-1 text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-tight">{t("total_days") as string}</div>
             </div>
-            <div className="rounded-[22px] border border-accent/20 bg-accent/10 p-4">
-              <div className="text-3xl font-bold text-accent">42</div>
-              <div className="mt-1 text-sm text-muted-foreground">{t("petals_count") as string}</div>
+            <div className="rounded-[24px] bg-[#F5C030]/10 p-4 border border-[#F5C030]/20">
+              <div className="text-2xl font-black text-[#F5C030]">{petals}</div>
+              <div className="mt-1 text-[9px] font-bold text-[#F5C030]/60 uppercase tracking-widest leading-tight">{t("petals_count") as string}</div>
             </div>
           </div>
+
+          <button
+            onClick={() => { logout(); navigate("/"); }}
+            className="mt-10 text-xs font-bold text-red-400 uppercase tracking-widest hover:text-red-500 transition-colors"
+          >
+            Se déconnecter
+          </button>
         </motion.div>
 
+        {/* Year Activity (Restricted for Seedling) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="rounded-[32px] border border-border/60 bg-card/80 p-6 shadow-sm"
+          className="rounded-[32px] border border-gray-100 bg-white p-6 shadow-sm relative overflow-hidden"
         >
-          <div className="mb-4 flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            <h3 className="text-xl font-semibold">{t("year_activity") as string}</h3>
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                <Calendar className="h-5 w-5 text-blue-500" />
+              </div>
+              <h3 className="text-lg font-bold text-[#1C1917]">{t("year_activity") as string}</h3>
+            </div>
           </div>
 
-          <div className="overflow-x-auto pb-2">
-            <div className="inline-flex flex-col gap-1">
+          <div className={`overflow-x-auto pb-4 hide-scrollbar ${!isPremium ? 'filter blur-[4px] pointer-events-none opacity-40 select-none' : ''}`}>
+            <div className="inline-flex flex-col gap-1.5">
               <div className="mb-2 ml-8 flex gap-1">
-                {(t("months_label") as unknown as string[]).map(
-                  (month, i) => (
-                    <div
-                      key={month}
-                      className="text-xs text-muted-foreground"
-                      style={{ width: `${(weeks.length / 12) * 12}px`, textAlign: "left" }}
-                    >
+                {stats.monthsLabel.map((month, i) => (
+                    <div key={i} className="text-[10px] font-bold text-[#1C1917]/20 uppercase" style={{ width: `${(weeks.length / 12) * 13}px`, textAlign: "left" }}>
                       {i % 2 === 0 ? month : ""}
                     </div>
-                  )
-                )}
+                ))}
               </div>
 
-              {[0, 1, 2, 3, 4, 5, 6].map((dayOfWeek) => (
-                <div key={dayOfWeek} className="flex gap-1 items-center">
-                  <div className="w-6 text-xs text-muted-foreground text-right">
-                    {(t("days_label") as unknown as string[])[dayOfWeek]}
+              {[1, 2, 3, 4, 5, 6, 0].map((dayOfWeek) => (
+                <div key={dayOfWeek} className="flex gap-1.5 items-center">
+                  <div className="w-6 text-[10px] font-bold text-[#1C1917]/20 uppercase text-right mr-1">
+                    {stats.daysLabel[dayOfWeek === 0 ? 6 : dayOfWeek - 1]}
                   </div>
                   <div className="flex gap-1">
                     {weeks.map((week, weekIndex) => {
                       const day = week[dayOfWeek];
                       return day ? (
-                        <div
-                          key={weekIndex}
-                          className={`w-3 h-3 rounded-sm ${getColorForIntensity(day.intensity)}`}
-                          title={day.date}
-                        />
-                      ) : (
-                        <div key={weekIndex} className="w-3 h-3" />
-                      );
+                        <div key={weekIndex} className={`w-3 h-3 rounded-[3px] ${getColorForIntensity(day.intensity)} transition-colors duration-300`} />
+                      ) : ( <div key={weekIndex} className="w-3 h-3" /> );
                     })}
                   </div>
                 </div>
@@ -138,54 +197,55 @@ export function Profile() {
             </div>
           </div>
 
-          <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">{t("less") as string}</span>
-              <div className="flex gap-1">
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <div key={i} className={`w-4 h-4 rounded-sm ${getColorForIntensity(i)}`} />
-                ))}
-              </div>
-              <span className="text-sm text-muted-foreground">{t("more") as string}</span>
+          {!isPremium && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center bg-white/10 backdrop-blur-[1px]">
+               <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xl max-w-[240px]">
+                  <Lock className="w-8 h-8 text-blue-500 mx-auto mb-3" />
+                  <h4 className="font-black text-[#1C1917] text-sm mb-1 uppercase tracking-tight">Heatmap complète</h4>
+                  <p className="text-[10px] text-gray-500 font-medium mb-4 leading-relaxed">Passe à Bloom pour visualiser ton activité sur toute l'année.</p>
+                  <button onClick={() => navigate("/upgrade")} className="w-full bg-blue-500 text-white py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-100">Débloquer</button>
+               </div>
             </div>
-          </div>
+          )}
         </motion.div>
 
+        {/* Insights (Restricted for Seedling) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="rounded-[32px] border border-border/60 bg-gradient-to-br from-secondary/10 to-accent/10 p-4 shadow-sm"
+          className="rounded-[32px] border border-gray-100 bg-white shadow-sm overflow-hidden"
         >
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="insights" className="border-none">
-              <AccordionTrigger className="px-3 py-3 hover:no-underline">
-                <div>
-                  <h3 className="text-xl font-semibold text-foreground">{t("insights") as string}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">les repères utiles sans allonger la page</p>
+              <AccordionTrigger className="px-6 py-5 hover:no-underline group">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center group-data-[state=open]:rotate-12 transition-transform">
+                    <TrendingUp className="h-5 w-5 text-purple-500" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-lg font-bold text-[#1C1917]">{t("insights") as string}</h3>
+                    <p className="text-xs font-medium text-[#1C1917]/40">Tes tendances et records</p>
+                  </div>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-3 pb-3">
-                <div className="space-y-3">
-                  <div className="rounded-[22px] border border-border/60 bg-card/80 p-4">
-                    <p className="text-card-foreground/80">
-                      🔥 <span className="font-semibold">{t("longest_streak") as string}:</span> 30 jours
-                    </p>
+              <AccordionContent className="px-6 pb-6 relative">
+                <div className={`space-y-3 ${!isPremium ? 'filter blur-[4px] opacity-40 select-none' : ''}`}>
+                  <div className="rounded-[22px] bg-gray-50 border border-gray-100 p-4 flex items-center justify-between">
+                    <span className="text-sm font-bold text-[#1C1917]/60">{t("longest_streak") as string}</span>
+                    <span className="text-sm font-black text-[#1C1917]">{stats.longestStreak} jours</span>
                   </div>
-                  <div className="rounded-[22px] border border-border/60 bg-card/80 p-4">
-                    <p className="text-card-foreground/80">
-                      📅 <span className="font-semibold">{t("best_day") as string}:</span> mercredi (85%)
-                    </p>
-                  </div>
-                  <div className="rounded-[22px] border border-border/60 bg-card/80 p-4">
-                    <p className="text-card-foreground/80">
-                      💪 <span className="font-semibold">{t("best_habit") as string}:</span> méditation
-                    </p>
-                  </div>
-                  <div className="rounded-[22px] border border-purple-500/20 bg-purple-500/10 p-4 text-center">
-                    <p className="text-sm leading-relaxed text-foreground/70">{t("data_note") as string}</p>
+                  <div className="rounded-[22px] bg-purple-50/50 border border-purple-100 p-5 text-center mt-4">
+                    <p className="text-xs font-medium leading-relaxed text-purple-700/70">{t("data_note") as string}</p>
                   </div>
                 </div>
+                {!isPremium && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center px-6">
+                    <button onClick={() => navigate("/upgrade")} className="flex items-center gap-2 bg-[#1C1917] text-white px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl">
+                      <Lock size={12} /> Débloquer les Insights
+                    </button>
+                  </div>
+                )}
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -194,4 +254,4 @@ export function Profile() {
     </div>
   );
 }
-
+ Broadway: Broadway

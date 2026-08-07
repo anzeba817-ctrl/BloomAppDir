@@ -6,6 +6,7 @@ import { X, Sparkles, Star, Crown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { SunnyMascot } from "../components/sunny-mascot";
 import confetti from "canvas-confetti";
+import { useLanguage } from "../contexts/LanguageContext";
 
 interface DanceStep {
   id: string;
@@ -24,7 +25,44 @@ const danceSteps: DanceStep[] = [
 export function CelebrationDance() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { lang } = useLanguage();
   const milestone = location.state?.milestone || { streak: 7, type: "week" };
+
+  const copy = {
+    fr: {
+      title: "jours de série !",
+      subtitle: "c'est le moment de danser avec sunny",
+      done: "fait ! ✓",
+      go: "c'est parti !",
+      autoDance: "voir la danse automatique",
+      amazing: "incroyable !",
+      completion: "tu as terminé la danse de la victoire. sunny est super fier(e) de toi !",
+      back: "retour au dashboard",
+      steps: ["salue sunny!", "saute de joie!", "tourne!", "célèbre!"],
+    },
+    en: {
+      title: "day streak!",
+      subtitle: "time to dance with sunny",
+      done: "done! ✓",
+      go: "let's go!",
+      autoDance: "watch auto dance",
+      amazing: "amazing!",
+      completion: "you completed the victory dance. sunny is super proud of you!",
+      back: "back to dashboard",
+      steps: ["wave to sunny!", "jump for joy!", "spin!", "celebrate!"],
+    },
+    es: {
+      title: "días de racha!",
+      subtitle: "es momento de bailar con sunny",
+      done: "hecho! ✓",
+      go: "vamos!",
+      autoDance: "ver baile automático",
+      amazing: "increíble!",
+      completion: "terminaste el baile de victoria. sunny está muy orgulloso de ti!",
+      back: "volver al dashboard",
+      steps: ["saluda a sunny!", "salta de alegría!", "gira!", "celebra!"],
+    },
+  }[lang];
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -171,10 +209,10 @@ export function CelebrationDance() {
             <Crown className="w-12 h-12 text-[#F5C030]" />
           </motion.div>
           <h1 className="text-3xl mb-2 text-[#141D24]">
-            {milestone.streak} jours de série !
+            {milestone.streak} {copy.title}
           </h1>
           <p className="text-lg text-[#141D24]/70">
-            c'est le moment de danser avec sunny 🎉
+            {copy.subtitle} 🎉
           </p>
         </motion.div>
 
@@ -198,7 +236,7 @@ export function CelebrationDance() {
             >
               <div className="text-6xl mb-4">{danceSteps[currentStep]?.emoji}</div>
               <div className="text-2xl font-semibold text-[#141D24] mb-4">
-                {danceSteps[currentStep]?.text}
+                {copy.steps[currentStep]}
               </div>
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -208,8 +246,8 @@ export function CelebrationDance() {
                 className="px-8 py-4 bg-gradient-to-r from-[#E8920A] to-[#F5C030] text-white rounded-2xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {completedSteps.includes(danceSteps[currentStep]?.id)
-                  ? "fait ! ✓"
-                  : "c'est parti !"}
+                  ? copy.done
+                  : copy.go}
               </motion.button>
             </motion.div>
           )}
@@ -226,7 +264,7 @@ export function CelebrationDance() {
             className="mb-8 px-6 py-3 bg-white/80 backdrop-blur-sm text-[#141D24] rounded-2xl shadow-lg hover:bg-white transition-colors flex items-center gap-2"
           >
             <Sparkles className="w-5 h-5 text-[#F5C030]" />
-            voir la danse automatique
+            {copy.autoDance}
           </motion.button>
         )}
 
@@ -257,16 +295,16 @@ export function CelebrationDance() {
             >
               <Star className="w-16 h-16 mx-auto mb-4 fill-current" />
               <h2 className="text-2xl font-semibold mb-3">
-                incroyable !
+                {copy.amazing}
               </h2>
               <p className="text-white/90 mb-6">
-                tu as terminé la danse de la victoire. sunny est super fier(e) de toi ! 🌻
+                {copy.completion} 🌻
               </p>
               <button
                 onClick={() => navigate("/dashboard")}
                 className="px-8 py-4 bg-white text-[#3A7D4F] rounded-2xl font-semibold hover:bg-white/90 transition-colors"
               >
-                retour au dashboard
+                {copy.back}
               </button>
             </motion.div>
           )}

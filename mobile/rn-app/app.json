@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Bloom Mobile",
+    "slug": "bloom-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/Logo.png",
+    "platforms": ["ios", "android", "web"],
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/Logo.png",
+        "backgroundColor": "#FEF8F0"
+      }
+    }
+  }
+}

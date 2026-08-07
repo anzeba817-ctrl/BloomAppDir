@@ -1,0 +1,9 @@
+from typing import Any
+
+class JWTError(Exception): ...
+
+class _JWT:
+    def encode(self, claims: dict[str, Any], key: str, algorithm: str) -> str: ...
+    def decode(self, token: str, key: str, algorithms: list[str]) -> dict[str, Any]: ...
+
+jwt: _JWT
