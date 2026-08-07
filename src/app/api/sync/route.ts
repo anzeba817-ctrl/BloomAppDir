@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPool } from "../../server/postgres";
+import type { PoolClient } from "pg";
 
 export const runtime = "nodejs";
 
@@ -125,7 +126,7 @@ function normalizeOps(body: unknown): PendingOp[] {
 }
 
 async function upsertHabit(
-  client: Awaited<ReturnType<ReturnType<typeof getPool>["connect"]>>,
+  client: PoolClient,
   profileId: string,
   payload: HabitUpsertV2Payload
 ): Promise<void> {
@@ -156,7 +157,7 @@ async function upsertHabit(
 }
 
 async function upsertValidation(
-  client: Awaited<ReturnType<ReturnType<typeof getPool>["connect"]>>,
+  client: PoolClient,
   profileId: string,
   payload: ValidationCreatePayload
 ): Promise<void> {
@@ -187,7 +188,7 @@ async function upsertValidation(
 }
 
 async function upsertCurrency(
-  client: Awaited<ReturnType<ReturnType<typeof getPool>["connect"]>>,
+  client: PoolClient,
   profileId: string,
   payload: CurrencyPayload
 ): Promise<void> {
@@ -207,7 +208,7 @@ async function upsertCurrency(
 }
 
 async function applySnapshot(
-  client: Awaited<ReturnType<ReturnType<typeof getPool>["connect"]>>,
+  client: PoolClient,
   profileId: string,
   snapshot: SyncSnapshot | undefined
 ): Promise<void> {
