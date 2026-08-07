@@ -18,7 +18,7 @@ export function LoginScreen() {
 
   const handleLogin = () => {
     if (!email || !password) {
-      toast.error("Veuillez remplir tous les champs.");
+      toast.error(t("error_all_fields_required") as string);
       return;
     }
     // Simulate login

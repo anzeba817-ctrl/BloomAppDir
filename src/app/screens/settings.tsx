@@ -34,9 +34,9 @@ export function Settings() {
   const [notifications, setNotifications] = useState(true);
 
   const notificationExamples = [
-    "good morning. sunny's up and waiting — don't leave them on read.",
-    "hey, juste un petit rappel doux. sunny croit en toi 🌻",
-    "tu as construit une belle série. viens valider ta journée ?",
+    t("notif_example_1"),
+    t("notif_example_2"),
+    t("notif_example_3"),
   ];
 
   return (
@@ -166,7 +166,7 @@ export function Settings() {
                   <Bell className="h-5 w-5" />
                   <div>
                     <h2 className="text-lg font-semibold text-card-foreground">{t("notifications") as string}</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">rappels doux et exemples de messages</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{t("notif_examples") as string}</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -174,7 +174,7 @@ export function Settings() {
                 <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
                   <div>
                     <div className="font-medium text-card-foreground">{t("notifications") as string}</div>
-                    <div className="text-sm text-muted-foreground">active ou coupe les rappels bienveillants</div>
+                    <div className="text-sm text-muted-foreground">{t("notif_toggle_desc") as string}</div>
                   </div>
                   <button onClick={() => setNotifications(!notifications)} className={`relative h-8 w-14 rounded-full transition-colors ${notifications ? "bg-secondary" : "bg-muted"}`}>
                     <motion.div className="absolute top-1 h-6 w-6 rounded-full bg-white shadow-md" animate={{ left: notifications ? "calc(100% - 28px)" : "4px" }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
@@ -197,8 +197,8 @@ export function Settings() {
             <AccordionItem value="account" className="border-t border-border/60">
               <AccordionTrigger className="px-2 py-3 hover:no-underline">
                 <div>
-                  <h2 className="text-lg font-semibold text-card-foreground">compte & intégrations</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">abonnement, export et connexion calendrier</p>
+                  <h2 className="text-lg font-semibold text-card-foreground">{t("account_integrations") as string}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">{t("account_integrations_desc") as string}</p>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-2 pb-2">
@@ -227,7 +227,7 @@ export function Settings() {
               <AccordionTrigger className="px-2 py-3 hover:no-underline">
                 <div>
                   <h2 className="text-lg font-semibold text-card-foreground">{t("support") as string}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">aide, contact et confidentialité</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{t("support_desc") as string}</p>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-2 pb-2">
@@ -251,7 +251,7 @@ export function Settings() {
                   <Globe className="h-5 w-5" />
                   <div>
                     <h2 className="text-lg font-semibold text-card-foreground">{t("language") as string}</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">change la langue sans quitter la page</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{t("language_desc") as string}</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -282,4 +282,3 @@ export function Settings() {
     </div>
   );
 }
-

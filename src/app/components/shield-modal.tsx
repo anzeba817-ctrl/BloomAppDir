@@ -1,12 +1,17 @@
+"use client";
+
 import { motion } from "motion/react";
 import { SunnyMascot } from "./sunny-mascot";
 import { Shield, X } from "lucide-react";
+import { useLanguage } from "../contexts/LanguageContext";
 
 interface ShieldModalProps {
   onClose: () => void;
 }
 
 export function ShieldModal({ onClose }: ShieldModalProps) {
+  const { t } = useLanguage();
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -35,7 +40,7 @@ export function ShieldModal({ onClose }: ShieldModalProps) {
           className="inline-flex items-center gap-2 bg-white/20 text-white px-6 py-2 rounded-full text-sm mb-6"
         >
           <Shield className="w-4 h-4" />
-          bloom shield activé
+          {t("bloom_shield_activated") as string}
         </motion.div>
 
         <motion.div
@@ -53,13 +58,13 @@ export function ShieldModal({ onClose }: ShieldModalProps) {
           transition={{ delay: 0.3 }}
           className="text-white space-y-4"
         >
-          <h2 className="text-2xl font-bold">série protégée</h2>
+          <h2 className="text-2xl font-bold">{t("streak_protected") as string}</h2>
           <p className="text-white/90 leading-relaxed">
-            un pétale de cristal a sauvé la mise. série protégée. va te reposer — sunny gère la situation.
+            {t("shield_modal_desc") as string}
           </p>
           <div className="bg-white/10 rounded-2xl p-4 text-sm">
             <p className="text-white/80">
-              💎 tu as utilisé 1 pétale de cristal
+              💎 {t("used_crystal_petal") as string}
             </p>
           </div>
         </motion.div>
@@ -71,9 +76,9 @@ export function ShieldModal({ onClose }: ShieldModalProps) {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onClose}
-          className="mt-8 w-full bg-white text-[#6B4FA0] py-4 rounded-2xl shadow-lg"
+          className="mt-8 w-full bg-white text-[#6B4FA0] py-4 rounded-2xl shadow-lg font-bold"
         >
-          merci sunny 💜
+          {t("thanks_sunny") as string}
         </motion.button>
 
         {/* Decorative glow */}

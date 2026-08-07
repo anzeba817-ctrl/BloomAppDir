@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import { useState } from "react";
 import { X } from "lucide-react";
+import { useLanguage } from "../contexts/LanguageContext";
 
 interface CheckInModalProps {
   habit: { name: string; mode: "build" | "quit" };
@@ -10,17 +11,18 @@ interface CheckInModalProps {
   onComplete: (mood: string, note: string) => void;
 }
 
-const moods = [
-  { emoji: "😊", label: "excellent", value: "excellent" },
-  { emoji: "🙂", label: "bien", value: "good" },
-  { emoji: "😐", label: "neutre", value: "neutral" },
-  { emoji: "😕", label: "difficile", value: "hard" },
-  { emoji: "😢", label: "très dur", value: "struggling" },
-];
-
 export function CheckInModal({ habit, onClose, onComplete }: CheckInModalProps) {
+  const { t } = useLanguage();
   const [selectedMood, setSelectedMood] = useState("");
   const [note, setNote] = useState("");
+
+  const moods = [
+    { emoji: "😊", label: t("mood_excellent"), value: "excellent" },
+    { emoji: "🙂", label: t("mood_good_label"), value: "good" },
+    { emoji: "😐", label: t("mood_neutral_label"), value: "neutral" },
+    { emoji: "😕", label: t("mood_hard_label"), value: "hard" },
+    { emoji: "😢", label: t("mood_struggling_label"), value: "struggling" },
+  ];
 
   const handleSubmit = () => {
     if (selectedMood) {
@@ -44,7 +46,7 @@ export function CheckInModal({ habit, onClose, onComplete }: CheckInModalProps) 
         className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl"
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl text-[#141D24]">validation quotidienne</h2>
+          <h2 className="text-2xl text-[#141D24]">{t("daily_validation") as string}</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-[#141D24]/5 rounded-full transition-colors"
@@ -55,9 +57,9 @@ export function CheckInModal({ habit, onClose, onComplete }: CheckInModalProps) 
 
         <div className="mb-6">
           <p className="text-[#141D24]/70 mb-2">
-            bravo pour <span className="font-semibold text-[#141D24]">{habit.name}</span> !
+            {t("bravo_for") as string} <span className="font-semibold text-[#141D24]">{habit.name}</span> !
           </p>
-          <p className="text-sm text-[#141D24]/60">comment te sens-tu aujourd'hui ?</p>
+          <p className="text-sm text-[#141D24]/60">{t("how_feeling_today") as string}</p>
         </div>
 
         {/* Mood Selector */}
@@ -74,11 +76,11 @@ export function CheckInModal({ habit, onClose, onComplete }: CheckInModalProps) 
             >
               <span className="text-2xl">{mood.emoji}</span>
               <span
-                className={`text-xs ${
+                className={`text-[10px] font-bold uppercase tracking-tight text-center ${
                   selectedMood === mood.value ? "text-white" : "text-[#141D24]/60"
                 }`}
               >
-                {mood.label}
+                {mood.label as string}
               </span>
             </button>
           ))}
@@ -87,12 +89,12 @@ export function CheckInModal({ habit, onClose, onComplete }: CheckInModalProps) 
         {/* Note */}
         <div className="mb-6">
           <label className="block text-sm text-[#141D24]/70 mb-2">
-            note personnelle (optionnel)
+            {t("personal_note_optional") as string}
           </label>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="qu'as-tu ressenti ? qu'as-tu appris ?"
+            placeholder={t("note_placeholder") as string}
             className="w-full bg-[#141D24]/5 rounded-2xl px-4 py-3 text-[#141D24] resize-none focus:outline-none focus:ring-2 focus:ring-[#E8920A] transition-all"
             rows={3}
           />
@@ -103,9 +105,9 @@ export function CheckInModal({ habit, onClose, onComplete }: CheckInModalProps) 
           whileTap={{ scale: selectedMood ? 0.98 : 1 }}
           onClick={handleSubmit}
           disabled={!selectedMood}
-          className="w-full bg-[#E8920A] text-white py-4 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+          className="w-full bg-[#E8920A] text-white py-4 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-opacity font-bold"
         >
-          valider la journée
+          {t("validate_day") as string}
         </motion.button>
       </motion.div>
     </motion.div>

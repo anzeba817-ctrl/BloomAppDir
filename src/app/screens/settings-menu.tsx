@@ -11,24 +11,24 @@ export function SettingsMenu() {
 
   const menuItems = [
     {
-      title: "Les réglages",
-      subtitle: "Thèmes, sons et notifications",
+      title: t("menu_settings_title"),
+      subtitle: t("menu_settings_sub"),
       icon: Settings,
       path: "/settings",
       color: "text-blue-500",
       bgColor: "bg-blue-50"
     },
     {
-      title: "Le journal",
-      subtitle: "Tes pensées, ton espace",
+      title: t("menu_journal_title"),
+      subtitle: t("menu_journal_sub"),
       icon: BookOpen,
       path: "/journal",
       color: "text-green-500",
       bgColor: "bg-green-50"
     },
     {
-      title: "Le profil & historique",
-      subtitle: "Tes statistiques et ton parcours",
+      title: t("menu_profile_title"),
+      subtitle: t("menu_profile_sub"),
       icon: User,
       path: "/profile",
       color: "text-purple-500",
@@ -39,7 +39,7 @@ export function SettingsMenu() {
   return (
     <div className="min-h-screen bg-white px-6 pt-12 pb-20">
       <div className="max-w-md mx-auto">
-        <h1 className="text-3xl font-bold text-[#1C1917] mb-8">Paramètres</h1>
+        <h1 className="text-3xl font-bold text-[#1C1917] mb-8">{t("settings_menu_title") as string}</h1>
 
         <div className="space-y-4">
           {menuItems.map((item, index) => (

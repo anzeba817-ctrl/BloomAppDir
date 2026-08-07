@@ -9,7 +9,6 @@ import { useNavigate } from "react-router-dom";
 
 /**
  * Interface pour une entrée de journal.
- * Stockée localement (Offline-First) et synchronisée.
  */
 interface JournalEntry {
   id: string;
@@ -20,14 +19,11 @@ interface JournalEntry {
 
 /**
  * Écran Journal Intime.
- * Spécification 6.1 : Stricte modération de la publicité (aucune bannière ici).
- * Spécification 7.4 : Mode Hors-Ligne Absolu.
  */
 export function Journal() {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
-  // Liste des humeurs disponibles pour le journal
   const moods = [
     { icon: "🌟", label: t("mood_radiant") as string },
     { icon: "😊", label: t("mood_good") as string },
@@ -36,18 +32,12 @@ export function Journal() {
     { icon: "🌧️", label: t("mood_tough") as string },
   ];
 
-  // État des entrées avec persistence locale
   const [entries, setEntries] = useLocalStorage<JournalEntry[]>("bloom-journal-entries", []);
-
-  // États de l'interface utilisateur
   const [showSheet, setShowSheet] = useState(false);
   const [selectedMood, setSelectedMood] = useState("");
   const [text, setText] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  /**
-   * Ouvre l'interface pour une nouvelle note.
-   */
   const handleOpenNew = () => {
     setEditingId(null);
     setText("");
@@ -55,9 +45,6 @@ export function Journal() {
     setShowSheet(true);
   };
 
-  /**
-   * Ouvre l'interface pour modifier une note existante.
-   */
   const handleEdit = (entry: JournalEntry) => {
     setEditingId(entry.id);
     setText(entry.text);
@@ -65,17 +52,12 @@ export function Journal() {
     setShowSheet(true);
   };
 
-  /**
-   * Enregistre la note localement (Spec 7.4).
-   */
   const handleSave = () => {
     if (!text.trim()) return;
 
     if (editingId) {
-      // Mise à jour d'une note existante
       setEntries(entries.map(e => e.id === editingId ? { ...e, text, mood: selectedMood } : e));
     } else {
-      // Création d'une nouvelle note
       const newEntry: JournalEntry = {
         id: Date.now().toString(),
         date: new Date().toISOString().split("T")[0],
@@ -85,23 +67,16 @@ export function Journal() {
       setEntries([newEntry, ...entries]);
     }
 
-    // Réinitialisation
     setText("");
     setSelectedMood("");
     setShowSheet(false);
     setEditingId(null);
   };
 
-  /**
-   * Supprime une note du stockage local.
-   */
   const handleDelete = (id: string) => {
     setEntries(entries.filter(e => e.id !== id));
   };
 
-  /**
-   * Formate la date pour l'affichage en français.
-   */
   const formatDate = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
@@ -113,7 +88,7 @@ export function Journal() {
 
   return (
     <div className="min-h-screen bg-white pb-32">
-      {/* En-tête avec bouton retour et bouton nouvelle note */}
+      {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md px-6 py-4 flex items-center gap-4 border-b border-gray-50">
         <button
           onClick={() => navigate(-1)}
@@ -133,7 +108,6 @@ export function Journal() {
       </div>
 
       <div className="max-w-xl mx-auto px-6 py-8">
-        {/* Affichage si aucune note n'est présente */}
         {entries.length === 0 ? (
           <div className="text-center py-20 bg-gray-50 rounded-[32px] border-2 border-dashed border-gray-100">
             <PenLine className="w-12 h-12 mx-auto mb-4 text-[#1C1917]/10" />
@@ -142,11 +116,10 @@ export function Journal() {
               onClick={handleOpenNew}
               className="mt-4 text-[#6B4EE0] font-bold text-sm"
             >
-              Écrire ma première pensée
+              {t("write_first_thought") as string}
             </button>
           </div>
         ) : (
-          /* Liste des notes triées par date (récentes en premier) */
           <div className="space-y-6">
             {entries.map((entry) => (
               <motion.div
@@ -167,7 +140,6 @@ export function Journal() {
                       </p>
                     </div>
                   </div>
-                  {/* Actions contextuelles au survol/toucher */}
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleEdit(entry)}
@@ -192,7 +164,7 @@ export function Journal() {
         )}
       </div>
 
-      {/* Interface de saisie (Feuille coulissante / Modal) */}
+      {/* Entry Sheet */}
       <AnimatePresence>
         {showSheet && (
           <>
@@ -214,14 +186,14 @@ export function Journal() {
 
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl font-bold text-[#1C1917]">
-                  {editingId ? "Modifier ma note" : t("how_feeling") as string}
+                  {editingId ? t("edit_note") : t("how_feeling") as string}
                 </h2>
                 <button onClick={() => setShowSheet(false)} className="p-2 bg-gray-50 rounded-full text-gray-400">
                   <X size={20} />
                 </button>
               </div>
 
-              {/* Sélecteur d'humeur */}
+              {/* Mood Selector */}
               <div className="flex justify-between gap-2 mb-8">
                 {moods.map((m) => (
                   <button
@@ -239,7 +211,6 @@ export function Journal() {
                 ))}
               </div>
 
-              {/* Champ de texte (Note) */}
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -248,7 +219,6 @@ export function Journal() {
                 className="w-full min-h-[160px] p-6 rounded-3xl bg-gray-50 border-none focus:ring-2 focus:ring-[#1C1917]/5 text-[#1C1917] font-medium resize-none placeholder:text-gray-300 mb-6"
               />
 
-              {/* Bouton d'enregistrement */}
               <button
                 onClick={handleSave}
                 disabled={!text.trim()}
@@ -256,7 +226,7 @@ export function Journal() {
                   text.trim() ? "bg-[#1C1917] text-white shadow-gray-200" : "bg-gray-100 text-gray-400 cursor-not-allowed"
                 }`}
               >
-                {editingId ? "Mettre à jour" : t("save_entry") as string}
+                {editingId ? t("update_note") : t("save_entry") as string}
               </button>
             </motion.div>
           </>

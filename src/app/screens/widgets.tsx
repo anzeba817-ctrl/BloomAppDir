@@ -30,19 +30,15 @@ interface Widget {
 export function Widgets() {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { session, isPremium } = useAuth();
+  const { isPremium } = useAuth();
   const [habits] = useLocalStorage<Habit[]>("bloom-habits", []);
   const [added, setAdded] = useState<string[]>([]);
 
-  // Calcul des données réelles pour la prévisualisation (Offline Logic Spec 7.4)
   const stats = useMemo(() => {
     const longestStreak = habits.length > 0 ? Math.max(...habits.map(h => h.streak), 0) : 0;
     return { longestStreak };
   }, [habits]);
 
-  /**
-   * Simule l'ajout d'un widget ou redirige vers le paywall si Premium requis.
-   */
   const handleToggle = (id: string, premium: boolean) => {
     if (premium && !isPremium) {
       navigate("/upgrade");
@@ -109,7 +105,6 @@ export function Widgets() {
 
   return (
     <div className="min-h-screen bg-white text-foreground pb-40 overflow-y-auto">
-      {/* En-tête fixe */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-50 px-6 py-5">
         <div className="max-w-2xl mx-auto">
           <h1 className="text-2xl font-bold text-[#1C1917]">{t("widgets_title") as string}</h1>
@@ -118,18 +113,16 @@ export function Widgets() {
       </div>
 
       <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
-        {/* Instructions d'installation (Guide Utilisateur) */}
         <div className="bg-blue-50 border border-blue-100 rounded-3xl p-5 flex gap-4 items-start shadow-sm">
            <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
            <div>
-             <h4 className="font-bold text-blue-900 text-sm mb-1">Comment installer ?</h4>
+             <h4 className="font-bold text-blue-900 text-sm mb-1">{t("how_to_install") as string}</h4>
              <p className="text-xs font-medium text-blue-700/70 leading-relaxed">
-               Maintenez votre doigt sur une zone vide de votre écran d'accueil, appuyez sur le bouton **(+)** ou **"Widgets"** et recherchez **Bloom**.
+               {t("install_instructions") as string}
              </p>
            </div>
         </div>
 
-        {/* Liste des Widgets disponibles */}
         {widgets.map((widget, i) => {
           const isAdded = added.includes(widget.id);
           const isLocked = widget.premium && !isPremium;
@@ -142,7 +135,6 @@ export function Widgets() {
               transition={{ delay: i * 0.08 }}
               className={`bg-white border rounded-[32px] p-6 shadow-sm transition-all ${isLocked ? 'border-gray-100 opacity-60' : 'border-gray-100'}`}
             >
-              {/* Prévisualisation dynamique */}
               <div className="mb-6">{widget.preview()}</div>
 
               <div className="flex items-center justify-between">
@@ -159,7 +151,6 @@ export function Widgets() {
                   </div>
                 </div>
 
-                {/* Bouton d'action avec gestion du verrouillage Premium */}
                 <button
                   onClick={() => handleToggle(widget.id, !!widget.premium)}
                   className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${

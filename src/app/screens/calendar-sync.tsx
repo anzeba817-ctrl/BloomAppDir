@@ -18,10 +18,7 @@ export function CalendarSync() {
 
   const handleConnect = async () => {
     setIsConnecting(true);
-
-    // Simulate OAuth flow
     await new Promise((resolve) => setTimeout(resolve, 2000));
-
     setIsConnected(true);
     setIsConnecting(false);
     setSyncEnabled(true);
@@ -36,7 +33,6 @@ export function CalendarSync() {
 
   const handleSync = async () => {
     if (!isConnected) return;
-
     setIsConnecting(true);
     await new Promise((resolve) => setTimeout(resolve, 1500));
     setLastSync(new Date());
@@ -161,28 +157,28 @@ export function CalendarSync() {
           transition={{ delay: 0.1 }}
           className="bg-white rounded-3xl p-6 shadow-lg"
         >
-          <h2 className="text-lg mb-4 text-[#141D24]">fonctionnalités</h2>
+          <h2 className="text-lg mb-4 text-[#141D24]">{t("features_title") as string}</h2>
           <div className="space-y-4">
             {[
               {
                 icon: "📅",
-                title: "événements automatiques",
-                desc: "tes habitudes quotidiennes sont ajoutées à ton calendrier",
+                title: t("feature_1_title"),
+                desc: t("feature_1_desc"),
               },
               {
                 icon: "🔔",
-                title: "rappels synchronisés",
-                desc: "reçois des notifications au bon moment",
+                title: t("feature_2_title"),
+                desc: t("feature_2_desc"),
               },
               {
                 icon: "✅",
-                title: "check-in rapide",
-                desc: "marque tes habitudes terminées directement depuis Google Calendar",
+                title: t("feature_3_title"),
+                desc: t("feature_3_desc"),
               },
               {
                 icon: "📊",
-                title: "vue d'ensemble",
-                desc: "visualise toutes tes habitudes en un coup d'œil",
+                title: t("feature_4_title"),
+                desc: t("feature_4_desc"),
               },
             ].map((feature, i) => (
               <div key={i} className="flex gap-4">
@@ -207,11 +203,10 @@ export function CalendarSync() {
             <div className="text-2xl">🔒</div>
             <div>
               <div className="font-semibold text-[#141D24] mb-2">
-                tes données restent privées
+                {t("privacy_title") as string}
               </div>
               <div className="text-sm text-[#141D24]/70">
-                bloom accède uniquement à ton calendrier pour ajouter et mettre à jour tes
-                événements d'habitudes. nous ne lisons jamais tes autres événements personnels.
+                {t("privacy_desc") as string}
               </div>
             </div>
           </div>
@@ -220,4 +215,3 @@ export function CalendarSync() {
     </div>
   );
 }
-

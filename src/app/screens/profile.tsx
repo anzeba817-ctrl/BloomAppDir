@@ -12,14 +12,14 @@ import type { Habit } from "../types/habit";
 import { readLocalCurrency } from "../utils/offline-sync";
 import { useEffect, useState, useMemo } from "react";
 import { format, subDays, startOfToday, eachDayOfInterval } from "date-fns";
+import { fr, enUS, es } from "date-fns/locale";
 
 /**
  * Écran Profil : Affiche les statistiques utilisateur et l'historique d'activité.
- * Gère les restrictions d'accès aux analyses avancées selon le forfait.
  */
 export function Profile() {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { session, logout } = useAuth();
   const user = session.user;
   const userPlan = user?.plan || 'seedling';
@@ -35,17 +35,17 @@ export function Profile() {
     })();
   }, []);
 
+  const dateLocale = lang === "fr" ? fr : lang === "es" ? es : enUS;
+
   const stats = useMemo(() => {
     const activeHabits = habits.length;
 
-    // Total days of activity
     const allDates = new Set<string>();
     habits.forEach(h => {
       h.history.forEach(entry => allDates.add(entry.date));
     });
     const totalDays = allDates.size;
 
-    // Heatmap data
     const today = startOfToday();
     const startDate = subDays(today, 364);
     const dateRange = eachDayOfInterval({ start: startDate, end: today });
@@ -61,7 +61,6 @@ export function Profile() {
       return { date: dateStr, intensity };
     });
 
-    // Insights
     const longestStreak = habits.length > 0 ? Math.max(...habits.map(h => h.streak), 0) : 0;
     const rawDaysLabel = t("days_label");
     const rawMonthsLabel = t("months_label");
@@ -93,24 +92,22 @@ export function Profile() {
 
   return (
     <div className="min-h-screen bg-white text-foreground pb-40 overflow-y-auto">
-      {/* Header */}
       <div className="sticky top-0 z-10 border-b border-gray-50 bg-white/80 backdrop-blur-md px-6 py-4">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">profil</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{t("nav_profile") as string}</p>
             <h1 className="text-xl font-bold text-[#1C1917]">{t("profile_title") as string}</h1>
           </div>
           <button
             onClick={() => navigate("/settings")}
             className="rounded-full border border-gray-100 bg-gray-50 px-4 py-2 text-sm font-bold text-[#1C1917]/60 transition-colors hover:text-[#1C1917]"
           >
-            réglages
+            {t("settings_button") as string}
           </button>
         </div>
       </div>
 
       <div className="mx-auto max-w-4xl space-y-6 px-5 py-8 sm:px-6">
-        {/* User Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -125,7 +122,7 @@ export function Profile() {
                 onClick={() => navigate("/upgrade")}
                 className="text-[10px] font-black bg-[#F5C030] text-white px-2 py-0.5 rounded-full uppercase"
               >
-                Passer Pro
+                {t("pass_pro") as string}
               </button>
             )}
           </div>
@@ -149,11 +146,10 @@ export function Profile() {
             onClick={() => { logout(); navigate("/"); }}
             className="mt-10 text-xs font-bold text-red-400 uppercase tracking-widest hover:text-red-500 transition-colors"
           >
-            Se déconnecter
+            {t("logout") as string}
           </button>
         </motion.div>
 
-        {/* Year Activity (Restricted for Seedling) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -201,15 +197,14 @@ export function Profile() {
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center bg-white/10 backdrop-blur-[1px]">
                <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xl max-w-[240px]">
                   <Lock className="w-8 h-8 text-blue-500 mx-auto mb-3" />
-                  <h4 className="font-black text-[#1C1917] text-sm mb-1 uppercase tracking-tight">Heatmap complète</h4>
-                  <p className="text-[10px] text-gray-500 font-medium mb-4 leading-relaxed">Passe à Bloom pour visualiser ton activité sur toute l'année.</p>
-                  <button onClick={() => navigate("/upgrade")} className="w-full bg-blue-500 text-white py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-100">Débloquer</button>
+                  <h4 className="font-black text-[#1C1917] text-sm mb-1 uppercase tracking-tight">{t("heatmap_locked_title") as string}</h4>
+                  <p className="text-[10px] text-gray-500 font-medium mb-4 leading-relaxed">{t("heatmap_locked_desc") as string}</p>
+                  <button onClick={() => navigate("/upgrade")} className="w-full bg-blue-500 text-white py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-100">{t("unlock") as string}</button>
                </div>
             </div>
           )}
         </motion.div>
 
-        {/* Insights (Restricted for Seedling) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -225,7 +220,7 @@ export function Profile() {
                   </div>
                   <div className="text-left">
                     <h3 className="text-lg font-bold text-[#1C1917]">{t("insights") as string}</h3>
-                    <p className="text-xs font-medium text-[#1C1917]/40">Tes tendances et records</p>
+                    <p className="text-xs font-medium text-[#1C1917]/40">{t("insights_desc") as string}</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -233,7 +228,7 @@ export function Profile() {
                 <div className={`space-y-3 ${!isPremium ? 'filter blur-[4px] opacity-40 select-none' : ''}`}>
                   <div className="rounded-[22px] bg-gray-50 border border-gray-100 p-4 flex items-center justify-between">
                     <span className="text-sm font-bold text-[#1C1917]/60">{t("longest_streak") as string}</span>
-                    <span className="text-sm font-black text-[#1C1917]">{stats.longestStreak} jours</span>
+                    <span className="text-sm font-black text-[#1C1917]">{stats.longestStreak} {t("streak_days") as string}</span>
                   </div>
                   <div className="rounded-[22px] bg-purple-50/50 border border-purple-100 p-5 text-center mt-4">
                     <p className="text-xs font-medium leading-relaxed text-purple-700/70">{t("data_note") as string}</p>
@@ -242,7 +237,7 @@ export function Profile() {
                 {!isPremium && (
                   <div className="absolute inset-0 z-10 flex items-center justify-center px-6">
                     <button onClick={() => navigate("/upgrade")} className="flex items-center gap-2 bg-[#1C1917] text-white px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl">
-                      <Lock size={12} /> Débloquer les Insights
+                      <Lock size={12} /> {t("unlock_insights") as string}
                     </button>
                   </div>
                 )}
@@ -254,4 +249,3 @@ export function Profile() {
     </div>
   );
 }
- Broadway: Broadway

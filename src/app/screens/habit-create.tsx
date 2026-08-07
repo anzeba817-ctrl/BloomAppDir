@@ -2,8 +2,8 @@
 
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Target, Calendar, Clock, Bell, Repeat, Plus, Check, Zap, AlertCircle, Trash2, Lock } from "lucide-react";
-import { useState, useEffect } from "react";
+import { ArrowLeft, Clock, Bell, Repeat, Plus, Check, Zap, AlertCircle, Trash2, Lock } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { SunnyMascot } from "../components/sunny-mascot";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -11,21 +11,11 @@ import type { Habit, EffortLevel } from "../types/habit";
 import { requestNotificationPermission, scheduleHabitReminder } from "../utils/notifications";
 import { toast } from "sonner";
 
-const WEEKDAYS = [
-  { id: 1, label: "L", full: "Lundi" },
-  { id: 2, label: "M", full: "Mardi" },
-  { id: 3, label: "M", full: "Mercredi" },
-  { id: 4, label: "J", full: "Jeudi" },
-  { id: 5, label: "V", full: "Vendredi" },
-  { id: 6, label: "S", full: "Samedi" },
-  { id: 0, label: "D", full: "Dimanche" },
-];
-
 export function HabitCreate() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLanguage();
-  const { session, isPremium } = useAuth();
+  const { session } = useAuth();
   const userPlan = session.user?.plan || 'seedling';
 
   const editingHabit = location.state?.habit as Habit | undefined;
@@ -40,7 +30,6 @@ export function HabitCreate() {
   const [reminderTime, setReminderTime] = useState("09:00");
   const [customReminder, setCustomReminder] = useState("");
   const [enableReminder, setEnableReminder] = useState(true);
-  const [hasDuration, setHasDuration] = useState(true);
   const [durationMinutes, setDurationMinutes] = useState(10);
   const [effortLevel, setEffortLevel] = useState<EffortLevel>("steady");
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
@@ -61,7 +50,6 @@ export function HabitCreate() {
       setReminderTime(editingHabit.reminderTime || "09:00");
       setEnableReminder(!!editingHabit.reminderTime);
       setCustomReminder(editingHabit.customReminder || "");
-      setHasDuration(!!editingHabit.durationMinutes);
       setDurationMinutes(editingHabit.durationMinutes || 10);
       setEffortLevel(editingHabit.effortLevel || "steady");
       setStartDate(editingHabit.startDate || new Date().toISOString().split("T")[0]);
@@ -74,6 +62,19 @@ export function HabitCreate() {
     }
   }, [editingHabit, location.state]);
 
+  const weekdays = useMemo(() => {
+    const labels = t("days_label") as string[];
+    return [
+      { id: 1, label: labels[0] },
+      { id: 2, label: labels[1] },
+      { id: 3, label: labels[2] },
+      { id: 4, label: labels[3] },
+      { id: 5, label: labels[4] },
+      { id: 6, label: labels[5] },
+      { id: 0, label: labels[6] },
+    ];
+  }, [t]);
+
   const toggleDay = (dayId: number) => {
     setSelectedDays(prev =>
       prev.includes(dayId) ? prev.filter(d => d !== dayId) : [...prev, dayId]
@@ -82,10 +83,10 @@ export function HabitCreate() {
 
   const handleFrequencyChange = (f: "daily" | "weekly" | "custom") => {
     if (userPlan === 'seedling' && f !== 'daily') {
-      toast.error("Fonctionnalité Premium", {
-        description: "Les cadences personnalisées sont réservées aux abonnés Bloom.",
+      toast.error(t("premium_feature") as string, {
+        description: t("custom_cadence_locked_desc") as string,
         action: {
-          label: "Découvrir",
+          label: t("discover") as string,
           onClick: () => navigate("/upgrade")
         }
       });
@@ -110,7 +111,7 @@ export function HabitCreate() {
       repetitionsPerDay,
       reminderTime: enableReminder ? reminderTime : null,
       customReminder: customReminder || undefined,
-      durationMinutes: hasDuration ? durationMinutes : null,
+      durationMinutes: durationMinutes || null,
       effortLevel,
       startDate,
       endDate: hasEndDate ? endDate : null,
@@ -143,7 +144,6 @@ export function HabitCreate() {
 
   return (
     <div className="min-h-screen bg-white pb-32">
-      {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-gray-50">
         <button
           onClick={() => navigate(-1)}
@@ -152,7 +152,7 @@ export function HabitCreate() {
           <ArrowLeft className="w-5 h-5 text-[#1C1917]" />
         </button>
         <h1 className="text-lg font-bold text-[#1C1917]">
-          {isEditing ? "Modifier l'habitude" : "Nouvelle habitude"}
+          {isEditing ? t("habit_edit_title") : t("habit_create_title")}
         </h1>
         {isEditing ? (
           <button onClick={handleDelete} className="p-1.5 bg-red-50 rounded-full text-red-500 active:scale-90 transition-all">
@@ -163,14 +163,12 @@ export function HabitCreate() {
 
       <div className="max-w-xl mx-auto px-6 py-2">
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Mascot */}
           <div className="flex justify-center">
             <SunnyMascot mood="neutral" size={60} />
           </div>
 
-          {/* Mode Selection */}
           <div className="bg-white rounded-[24px] p-4 shadow-sm border border-gray-100">
-            <h2 className="text-xs font-bold mb-3 text-[#1C1917]/40 uppercase tracking-widest">Type</h2>
+            <h2 className="text-xs font-bold mb-3 text-[#1C1917]/40 uppercase tracking-widest">{t("habit_type")}</h2>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -182,7 +180,7 @@ export function HabitCreate() {
                 }`}
               >
                 <Plus size={14} />
-                <span className="font-bold text-sm">Encrage</span>
+                <span className="font-bold text-sm">{t("build_mode_label")}</span>
               </button>
               <button
                 type="button"
@@ -194,30 +192,28 @@ export function HabitCreate() {
                 }`}
               >
                 <Zap size={14} />
-                <span className="font-bold text-sm">Sevrage</span>
+                <span className="font-bold text-sm">{t("quit_mode_label")}</span>
               </button>
             </div>
           </div>
 
-          {/* Habit Name */}
           <div className="bg-white rounded-[24px] p-4 shadow-sm border border-gray-100">
             <label className="block text-xs font-bold mb-2 text-[#1C1917]/40 uppercase tracking-widest">
-              {mode === "build" ? "Quoi ?" : "Arrêter quoi ?"}
+              {mode === "build" ? t("habit_what") : t("habit_quit_what")}
             </label>
             <input
               type="text"
               value={habitName}
               onChange={(e) => setHabitName(e.target.value)}
-              placeholder={mode === "build" ? "Méditer, Courir..." : "Sucre, Tabac..."}
+              placeholder={mode === "build" ? t("habit_name_placeholder") as string : t("habit_quit_placeholder") as string}
               className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-green-500/20 text-[#1C1917] font-medium text-sm"
             />
           </div>
 
-          {/* Frequency & Time */}
           <div className="bg-white rounded-[24px] p-4 shadow-sm border border-gray-100 space-y-4">
             <label className="block text-xs font-bold text-[#1C1917]/40 uppercase tracking-widest flex items-center justify-between">
-              Fréquence & Temps
-              {userPlan === 'seedling' && <span className="text-[9px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">Seedling (Fixe)</span>}
+              {t("habit_frequency_time")}
+              {userPlan === 'seedling' && <span className="text-[9px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">{t("seedling_fixed")}</span>}
             </label>
 
             <div className="grid grid-cols-3 gap-2">
@@ -235,22 +231,17 @@ export function HabitCreate() {
                     }`}
                   >
                     {isLocked && <Lock size={10} />}
-                    {f === "daily" ? "Quotidien" : f === "weekly" ? "Hebdo" : "Perso"}
+                    {f === "daily" ? t("frequency_daily") : f === "weekly" ? t("frequency_weekly") : t("frequency_custom")}
                   </button>
                 );
               })}
             </div>
 
-            {/* Weekly/Custom Days Selection */}
             {frequency !== "daily" && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="pt-2"
-              >
-                <p className="text-[11px] font-bold text-[#1C1917]/40 uppercase mb-2">Choisir les jours</p>
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="pt-2">
+                <p className="text-[11px] font-bold text-[#1C1917]/40 uppercase mb-2">{t("choose_days")}</p>
                 <div className="flex justify-between gap-1">
-                  {WEEKDAYS.map((day) => (
+                  {weekdays.map((day) => (
                     <button
                       key={day.id}
                       type="button"
@@ -261,7 +252,7 @@ export function HabitCreate() {
                           : "bg-gray-50 border-gray-50 text-gray-400"
                       }`}
                     >
-                      {day.label}
+                      {day.label.toUpperCase()}
                     </button>
                   ))}
                 </div>
@@ -269,11 +260,10 @@ export function HabitCreate() {
             )}
 
             <div className="space-y-2">
-               {/* Repetition per day */}
                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                   <div className="flex items-center gap-2">
                      <Repeat size={16} className="text-gray-400" />
-                     <span className="font-bold text-sm text-[#1C1917]">Répétition / jour</span>
+                     <span className="font-bold text-sm text-[#1C1917]">{t("reps_per_day")}</span>
                   </div>
                   <div className="flex items-center gap-3">
                      <button
@@ -293,7 +283,7 @@ export function HabitCreate() {
                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                   <div className="flex items-center gap-2">
                      <Clock size={16} className="text-gray-400" />
-                     <span className="font-bold text-sm text-[#1C1917]">Durée (min)</span>
+                     <span className="font-bold text-sm text-[#1C1917]">{t("duration_min")}</span>
                   </div>
                   <input
                     type="number"
@@ -307,7 +297,7 @@ export function HabitCreate() {
                   <div className="flex items-center gap-3">
                      <div className="flex items-center gap-2">
                         <Bell size={16} className="text-gray-400" />
-                        <span className="font-bold text-sm text-[#1C1917]">Rappel</span>
+                        <span className="font-bold text-sm text-[#1C1917]">{t("reminder")}</span>
                      </div>
                      <button
                         type="button"
@@ -327,14 +317,13 @@ export function HabitCreate() {
                   )}
                </div>
 
-               {/* End Conditions */}
                <div className="p-3 bg-gray-50 rounded-xl space-y-3">
                   <div className="flex items-center justify-between">
-                     <span className="font-bold text-sm text-[#1C1917]">Fin de l'habitude ?</span>
+                     <span className="font-bold text-sm text-[#1C1917]">{t("end_habit_question")}</span>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-medium text-gray-500">Par date</label>
+                    <label className="text-xs font-medium text-gray-500">{t("by_date")}</label>
                     <button
                       type="button"
                       onClick={() => setHasEndDate(!hasEndDate)}
@@ -353,7 +342,7 @@ export function HabitCreate() {
                   )}
 
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-medium text-gray-500">Par nombre de fois</label>
+                    <label className="text-xs font-medium text-gray-500">{t("by_count")}</label>
                     <button
                       type="button"
                       onClick={() => setHasTargetExecutions(!hasTargetExecutions)}
@@ -370,29 +359,23 @@ export function HabitCreate() {
                         onChange={(e) => setTargetExecutions(Number(e.target.value))}
                         className="flex-1 bg-transparent text-sm font-bold text-[#1C1917] focus:outline-none"
                       />
-                      <span className="text-xs text-gray-400">exécutions totales</span>
+                      <span className="text-xs text-gray-400">{t("total_executions")}</span>
                     </div>
                   )}
                </div>
 
-               {/* Custom reminder text */}
                <AnimatePresence>
                  {(frequency === "custom" || enableReminder) && (
-                   <motion.div
-                     initial={{ opacity: 0, y: 10 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     exit={{ opacity: 0, y: 10 }}
-                     className="p-3 bg-gray-50 rounded-xl"
-                   >
+                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="p-3 bg-gray-50 rounded-xl">
                       <div className="flex items-center gap-2 mb-2">
                          <AlertCircle size={16} className="text-gray-400" />
-                         <span className="font-bold text-sm text-[#1C1917]">Message de rappel</span>
+                         <span className="font-bold text-sm text-[#1C1917]">{t("reminder_message")}</span>
                       </div>
                       <input
                         type="text"
                         value={customReminder}
                         onChange={(e) => setCustomReminder(e.target.value)}
-                        placeholder="Ex: 'N'oublie pas de boire de l'eau !'"
+                        placeholder={t("reminder_message_placeholder") as string}
                         className="w-full bg-transparent border-b border-gray-200 py-1 focus:border-[#0085FF] focus:outline-none text-sm text-[#1C1917]"
                       />
                    </motion.div>
@@ -411,7 +394,7 @@ export function HabitCreate() {
                   : "bg-gray-100 text-gray-400 cursor-not-allowed"
               }`}
             >
-              {isEditing ? "Mettre à jour" : "Enregistrer l'habitude"}
+              {isEditing ? t("update_habit") : t("save_habit")}
             </button>
           </div>
         </form>
@@ -419,4 +402,3 @@ export function HabitCreate() {
     </div>
   );
 }
- Broadway: Broadway

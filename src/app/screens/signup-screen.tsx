@@ -21,11 +21,11 @@ export function SignupScreen() {
 
   const handleSignup = () => {
     if (!email || !password || !displayName) {
-      toast.error("Veuillez remplir tous les champs.");
+      toast.error(t("error_all_fields_required") as string);
       return;
     }
     if (password !== confirmPassword) {
-      toast.error("Les mots de passe ne correspondent pas.");
+      toast.error(t("error_passwords_mismatch") as string);
       return;
     }
     if (!agreed) {
@@ -69,7 +69,7 @@ export function SignupScreen() {
           <div className="space-y-3">
             <input
               type="text"
-              placeholder="Nom complet"
+              placeholder={t("full_name_placeholder") as string}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               className="w-full rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-base focus:border-[#F5C030] focus:outline-none transition-all"

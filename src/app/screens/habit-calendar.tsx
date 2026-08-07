@@ -1,22 +1,23 @@
 "use client";
 
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
-import { motion } from "motion/react";
-import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Share2, Users, Zap, Plus } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { DayPicker } from "react-day-picker";
 import type { DayContentProps } from "react-day-picker";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
-import { SunnyMascot } from "../components/sunny-mascot";
+import { fr, enUS, es } from "date-fns/locale";
 import type { Habit } from "../types/habit";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useLanguage } from "../contexts/LanguageContext";
 
+/**
+ * SUIVI DES HABITUDES (CALENDRIER)
+ */
 export function HabitCalendar() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [habits] = useLocalStorage<Habit[]>("bloom-habits", []);
 
   const [currentView, setCurrentView] = useState<"build" | "quit">((searchParams.get("mode") as "build" | "quit") || "build");
@@ -51,6 +52,8 @@ export function HabitCalendar() {
     return map;
   }, [habits, currentView]);
 
+  const dateLocale = lang === "fr" ? fr : lang === "es" ? es : enUS;
+
   const DayContent = ({ date }: DayContentProps) => {
     const dateKey = format(date, "yyyy-MM-dd");
     const dayCheckIns = checkInsByDate[dateKey] || [];
@@ -73,7 +76,6 @@ export function HabitCalendar() {
     return habits.filter(h => {
       if (h.mode !== currentView) return false;
 
-      // Check if habit is active on this day
       if (h.frequency === "daily") return true;
       if (h.frequency === "weekly" || h.frequency === "custom") {
         return h.selectedDays?.includes(dayOfWeek) ?? true;
@@ -97,11 +99,10 @@ export function HabitCalendar() {
         >
           <ArrowLeft className="w-5 h-5 text-[#1C1917]" />
         </button>
-        <h1 className="text-lg font-bold text-[#1C1917]">Suivi des habitudes</h1>
+        <h1 className="text-lg font-bold text-[#1C1917]">{t("habit_calendar_title") as string}</h1>
       </div>
 
       <div className="max-w-xl mx-auto px-6 py-6 pb-32">
-        {/* Mode Switcher */}
         <div className="mb-8 bg-[#F3F4F6] p-1 rounded-full flex relative">
           <button
             onClick={() => setMode("build")}
@@ -129,7 +130,7 @@ export function HabitCalendar() {
             selected={selectedDate}
             onDayClick={setSelectedDate}
             components={{ DayContent }}
-            locale={fr}
+            locale={dateLocale}
             className="!font-sans m-0"
             styles={{
               head_cell: { color: "#94979f", fontWeight: 700, fontSize: "0.75rem" },
@@ -141,7 +142,9 @@ export function HabitCalendar() {
 
         <div className="space-y-6">
           <div className="px-2">
-            <h2 className="text-xs font-bold text-[#1C1917]/40 uppercase tracking-widest mb-4">Habitudes du {format(selectedDate, "d MMMM", { locale: fr })}</h2>
+            <h2 className="text-xs font-bold text-[#1C1917]/40 uppercase tracking-widest mb-4">
+              {t("habits_of") as string} {format(selectedDate, "d MMMM", { locale: dateLocale })}
+            </h2>
 
             {selectedDayHabits.length > 0 ? (
               <div className="space-y-3">
@@ -152,14 +155,14 @@ export function HabitCalendar() {
                       <span className="font-bold text-[#1C1917]">{h.name}</span>
                     </div>
                     <span className={`text-xs font-bold ${h.completedCount >= h.repetitionsPerDay ? 'text-green-600' : 'text-[#1C1917]/40'}`}>
-                      {h.completedCount}/{h.repetitionsPerDay} complété
+                      {h.completedCount}/{h.repetitionsPerDay} {t("completed") as string || "complété"}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-10 bg-gray-50 rounded-[32px] border-2 border-dashed border-gray-200">
-                <p className="text-[#1C1917]/30 text-sm font-medium">Aucune habitude prévue ce jour.</p>
+                <p className="text-[#1C1917]/30 text-sm font-medium">{t("no_habits_scheduled") as string}</p>
               </div>
             )}
           </div>

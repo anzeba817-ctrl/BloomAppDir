@@ -1,5 +1,6 @@
 import { LocalNotifications } from "@capacitor/local-notifications";
 import type { Habit } from "../types/habit";
+import { translations, Language } from "../contexts/LanguageContext";
 
 /**
  * GESTION NATIVE DES NOTIFICATIONS ET ÉVITEMENT DU SPAM
@@ -7,6 +8,14 @@ import type { Habit } from "../types/habit";
  * Les rappels sont planifiés localement.
  * Filtre en temps réel : si l'habitude est faite, la notification est annulée.
  */
+
+function getTranslation(key: keyof typeof translations.fr): string {
+  let lang: Language = "fr";
+  if (typeof window !== "undefined") {
+    lang = (localStorage.getItem("bloom_lang") as Language) || "fr";
+  }
+  return (translations[lang] as any)[key] || (translations.fr as any)[key] || key;
+}
 
 /**
  * Demande la permission d'afficher des notifications.
@@ -33,9 +42,13 @@ export async function scheduleHabitReminder(habit: Habit) {
   const notifications: any[] = [];
 
   // Configuration de base de la notification (Spec 7.3)
+  const buildTitle = getTranslation("notif_build_title" as any) || "C'est l'heure d'ancrer ! 🌻";
+  const quitTitle = getTranslation("notif_quit_title" as any) || "Reste fort(e) ! 🕊️";
+  const bodyPrefix = getTranslation("notif_body_prefix" as any) || "C'est le moment pour : ";
+
   const baseNotification = {
-    title: habit.mode === 'build' ? "C'est l'heure d'ancrer ! 🌻" : "Reste fort(e) ! 🕊️",
-    body: habit.customReminder || `C'est le moment pour : ${habit.name}`,
+    title: habit.mode === 'build' ? buildTitle : quitTitle,
+    body: habit.customReminder || `${bodyPrefix}${habit.name}`,
     sound: "sounds/success-chime.mp3",
     extra: {
       habitId: habit.id

@@ -21,16 +21,16 @@ export function Notifications() {
 
       return {
         id: h.id,
-        title: done ? "Bien joué !" : "C'est l'heure !",
+        title: done ? t("notif_well_done") : t("notif_its_time"),
         body: done
-          ? `Tu as complété ton objectif "${h.name}" pour aujourd'hui.`
-          : `N'oublie pas de valider "${h.name}" pour garder ta série de ${h.streak} jours.`,
-        time: h.reminderTime ? `Aujourd'hui à ${h.reminderTime}` : "Aujourd'hui",
+          ? (t("notif_body_done") as string).replace("{{name}}", h.name)
+          : (t("notif_body_todo") as string).replace("{{name}}", h.name).replace("{{streak}}", h.streak.toString()),
+        time: h.reminderTime ? `${t("today")} ${t("at_time")} ${h.reminderTime}` : t("today"),
         read: done,
         habitId: h.id
       };
     }).sort((a, b) => (a.read === b.read) ? 0 : a.read ? 1 : -1);
-  }, [habits]);
+  }, [habits, t]);
 
   return (
     <div className="min-h-screen bg-white pb-32">
@@ -41,7 +41,7 @@ export function Notifications() {
         >
           <ArrowLeft className="w-5 h-5 text-[#1C1917]" />
         </button>
-        <h1 className="text-lg font-bold text-[#1C1917]">Notifications</h1>
+        <h1 className="text-lg font-bold text-[#1C1917]">{t("notifications_title") as string}</h1>
       </div>
 
       <div className="max-w-xl mx-auto px-6 py-6">
@@ -83,7 +83,7 @@ export function Notifications() {
             <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
               <BellOff className="text-gray-300" size={32} />
             </div>
-            <p className="text-gray-400 font-medium">Aucune notification pour le moment.</p>
+            <p className="text-gray-400 font-medium">{t("no_notifications") as string}</p>
           </div>
         )}
       </div>

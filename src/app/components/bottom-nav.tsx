@@ -21,7 +21,7 @@ export function BottomNav() {
       isCenter: true,
       state: { mode: currentMode }
     },
-    { path: "/settings-menu", icon: Settings, label: "Settings" },
+    { path: "/settings-menu", icon: Settings, label: t("settings_menu_title") },
   ];
 
   return (

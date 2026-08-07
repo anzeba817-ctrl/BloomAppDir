@@ -65,20 +65,20 @@ export function OnboardingHabit() {
       >
         <div>
           <label className="block text-sm mb-2 text-muted-foreground">
-            {mode === "build" ? "nom de l'habitude" : "habitude à quitter"}
+            {mode === "build" ? t("habit_name_label") : t("habit_quit_label")}
           </label>
           <input
             type="text"
             value={habitName}
             onChange={(e) => setHabitName(e.target.value)}
-            placeholder={mode === "build" ? "ex: méditer 10 minutes" : "ex: fumer"}
+            placeholder={mode === "build" ? t("habit_name_ex") as string : t("habit_quit_ex") as string}
             className="w-full bg-card border-2 border-border rounded-2xl px-6 py-4 text-card-foreground focus:outline-none focus:border-primary transition-colors"
             autoFocus
           />
         </div>
 
         <div>
-          <label className="block text-sm mb-2 text-muted-foreground">cadence</label>
+          <label className="block text-sm mb-2 text-muted-foreground">{t("cadence")}</label>
           <div className="space-y-3">
             <button
               onClick={() => setFrequency("daily")}
@@ -90,8 +90,8 @@ export function OnboardingHabit() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-card-foreground">quotidienne</div>
-                  <div className="text-sm text-muted-foreground">tous les jours</div>
+                  <div className="font-semibold text-card-foreground">{t("daily")}</div>
+                  <div className="text-sm text-muted-foreground">{t("every_day")}</div>
                 </div>
                 {frequency === "daily" && (
                   <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
@@ -107,8 +107,8 @@ export function OnboardingHabit() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-muted-foreground">cadence personnalisée</div>
-                  <div className="text-sm text-muted-foreground/80">disponible en version bloom</div>
+                  <div className="font-semibold text-muted-foreground">{t("custom_cadence")}</div>
+                  <div className="text-sm text-muted-foreground/80">{t("available_in_bloom")}</div>
                 </div>
                 <Lock className="w-5 h-5 text-muted-foreground" />
               </div>
@@ -139,4 +139,3 @@ export function OnboardingHabit() {
     </div>
   );
 }
-

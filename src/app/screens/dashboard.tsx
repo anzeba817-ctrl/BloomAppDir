@@ -41,8 +41,6 @@ import { toast } from "sonner";
 
 /**
  * DASHBOARD PRINCIPAL - Cœur de l'expérience Bloom.
- * Gère le défilement entre Build et Quit mode (Spec 5.1).
- * Implémente la monétisation Seedling/Premium (Spec 6.0).
  */
 export function Dashboard() {
   const location = useLocation();
@@ -53,7 +51,6 @@ export function Dashboard() {
   const { session, isPremium } = useAuth();
   const userPlan = session.user?.plan || 'seedling';
 
-  // --- Logique du "Double Mode" (Spec 5.1) ---
   const currentViewFromSurvey = location.state?.surveyAnswers?.type === "quit" ? "quit" : "build";
   const initialView = (searchParams.get("mode") as "build" | "quit") || currentViewFromSurvey;
   const [currentView, setCurrentView] = useState<"build" | "quit">(initialView);
@@ -69,7 +66,6 @@ export function Dashboard() {
     setSearchParams({ mode }, { replace: true });
   };
 
-  // --- États et Monnaie (Tokenomics Spec 5.3) ---
   const [petals, setPetals] = useState(0);
   const [crystals, setCrystals] = useState(0);
   const [shieldUntil, setShieldUntil] = useState<string | null>(null);
@@ -77,23 +73,19 @@ export function Dashboard() {
   const [showMilestone, setShowMilestone] = useState(false);
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
   const [sunnyAnimation, setSunnyAnimation] = useState<SunnyMood | null>(null);
-  const [currentPage, setCurrentPage] = useState(0);
   const [showAll, setShowAll] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
   const userName = session.user?.displayName || "User";
 
-  // --- Logique Métier et Persistance (Offline-First Spec 7.4) ---
   const [habits, setHabits] = useLocalStorage<Habit[]>("bloom-habits", []);
 
-  // Calcul de l'état émotionnel de Sunny (Spec 4.2)
   const currentMood = useMemo(() => {
     if (sunnyAnimation) return sunnyAnimation;
     return computeSunnyMood(habits, shieldUntil, userPlan);
   }, [habits, shieldUntil, sunnyAnimation, userPlan]);
 
   useEffect(() => {
-    // Démarre la surveillance réseau pour la synchro (Spec 7.4)
     const cleanup = startSyncOnReconnect();
     return cleanup;
   }, []);
@@ -109,9 +101,6 @@ export function Dashboard() {
     void refreshCurrency();
   }, [location.pathname, location.key]);
 
-  /**
-   * Action : Activer le Bouclier Bloom Shield (Spec 5.3).
-   */
   const handleActivateShield = async () => {
     if (crystals > 0) {
       const next = await activateBloomShield();
@@ -119,13 +108,10 @@ export function Dashboard() {
       setCrystals(next.cristaux);
       setShieldUntil(next.shield_until_utc);
       playSound("sounds/shield-activate.mp3", soundEnabled);
-      toast.success("Bouclier activé pour 24h !");
+      toast.success(t("shield_activated") as string || "Bouclier activé !");
     }
   };
 
-  /**
-   * Filtrage des habitudes pour le jour sélectionné (Aware of Timezone Spec 7.2).
-   */
   const filteredHabits = useMemo(() => {
     const dayOfWeek = new Date(selectedDate).getDay();
     return habits
@@ -140,63 +126,57 @@ export function Dashboard() {
       .sort((a, b) => habits.indexOf(b) - habits.indexOf(a));
   }, [habits, currentView, selectedDate]);
 
-  // Calcule la progression quotidienne basée sur les répétitions.
   const stats = useMemo(() => {
-    let totalReps = 0;
-    let completedReps = 0;
     let fullyCompletedCount = 0;
+    let totalReps = 0;
 
     filteredHabits.forEach(h => {
       totalReps += h.repetitionsPerDay || 1;
       const entry = h.history.find(e => e.date === selectedDate);
       const count = entry?.completedCount ?? 0;
-      completedReps += Math.min(count, h.repetitionsPerDay || 1);
       if (count >= (h.repetitionsPerDay || 1)) {
         fullyCompletedCount++;
       }
     });
 
     return {
-      totalReps,
-      completedReps,
       fullyCompletedCount,
       totalHabits: filteredHabits.length,
-      percent: totalReps > 0 ? Math.round((completedReps / totalReps) * 100) : 0
+      percent: totalReps > 0 ? Math.round((fullyCompletedCount / filteredHabits.length) * 100) : 0
     };
   }, [filteredHabits, selectedDate]);
 
   const progressPercent = stats.percent;
 
-  /**
-   * Validation Rapide (Check-in Spec 5.2).
-   * Intègre le filtre anti-spam des notifications (Spec 7.3).
-   */
+  const handleCheckIn = (habit: Habit) => {
+    setSelectedHabit(habit);
+    setShowCheckIn(true);
+  };
+
   const handleQuickCheckIn = (habit: Habit) => {
     void (async () => {
       const result = await queueHabitCheckIn({ habitId: habit.id, date: selectedDate });
 
-      // Mise à jour de l'état local
-      setHabits((prev) =>
-        prev.map((h) => {
-          if (h.id !== habit.id) return h;
-          const existingEntryIndex = h.history.findIndex((entry) => entry.date === result.logicalDate);
-          let nextHistory = [...h.history];
-          if (existingEntryIndex >= 0) {
-            nextHistory[existingEntryIndex] = { ...nextHistory[existingEntryIndex], completedCount: result.currentCount };
-          } else {
-            nextHistory.push({ date: result.logicalDate, completedCount: result.currentCount });
-          }
-          const updatedHabit = { ...h, streak: result.streak, lastCheckIn: result.lastCheckIn, history: nextHistory };
+      const nextHabits = habits.map((h) => {
+        if (h.id !== habit.id) return h;
+        const existingEntryIndex = h.history.findIndex((entry) => entry.date === result.logicalDate);
+        let nextHistory = [...h.history];
+        if (existingEntryIndex >= 0) {
+          nextHistory[existingEntryIndex] = { ...nextHistory[existingEntryIndex], completedCount: result.currentCount };
+        } else {
+          nextHistory.push({ date: result.logicalDate, completedCount: result.currentCount });
+        }
+        return { ...h, streak: result.streak, lastCheckIn: result.lastCheckIn, history: nextHistory };
+      });
 
-          // Spec 7.3 : Filtre de notification en temps réel
-          const isDoneToday = result.currentCount >= (h.repetitionsPerDay || 1);
-          void filterNotificationSpam(updatedHabit, isDoneToday);
+      setHabits(nextHabits);
 
-          return updatedHabit;
-        })
-      );
+      const updatedHabit = nextHabits.find(h => h.id === habit.id);
+      if (updatedHabit) {
+        const isDoneToday = result.currentCount >= (habit.repetitionsPerDay || 1);
+        void filterNotificationSpam(updatedHabit, isDoneToday);
+      }
 
-      // Tokenomics (Spec 5.3)
       const isForever = userPlan === 'forever';
       const nextPetals = await Tokenomics.earnForValidation(isForever);
       setPetals(nextPetals);
@@ -208,40 +188,36 @@ export function Dashboard() {
     })();
   };
 
-  /**
-   * Check-in Détaillé (Humeur + Note Spec 5.2).
-   */
   const handleCheckInComplete = (mood: string, note: string) => {
     if (selectedHabit) {
       void (async () => {
         const result = await queueHabitCheckIn({ habitId: selectedHabit.id, date: selectedDate, mood, note });
 
-        setHabits((prev) =>
-          prev.map((h) => {
-            if (h.id !== selectedHabit.id) return h;
-            const existingEntryIndex = h.history.findIndex((entry) => entry.date === result.logicalDate);
-            let nextHistory = [...h.history];
-            if (existingEntryIndex >= 0) {
-              nextHistory[existingEntryIndex] = { ...nextHistory[existingEntryIndex], completedCount: result.currentCount, mood, note };
-            } else {
-              nextHistory.push({ date: result.logicalDate, completedCount: result.currentCount, mood, note });
-            }
-            const updatedHabit = { ...h, streak: result.streak, lastCheckIn: result.lastCheckIn, history: nextHistory };
+        const nextHabits = habits.map((h) => {
+          if (h.id !== selectedHabit.id) return h;
+          const existingEntryIndex = h.history.findIndex((entry) => entry.date === result.logicalDate);
+          let nextHistory = [...h.history];
+          if (existingEntryIndex >= 0) {
+            nextHistory[existingEntryIndex] = { ...nextHistory[existingEntryIndex], completedCount: result.currentCount, mood, note };
+          } else {
+            nextHistory.push({ date: result.logicalDate, completedCount: result.currentCount, mood, note });
+          }
+          return { ...h, streak: result.streak, lastCheckIn: result.lastCheckIn, history: nextHistory };
+        });
 
-            // Spec 7.3 : Évitement du spam
-            const isDoneToday = result.currentCount >= (h.repetitionsPerDay || 1);
-            void filterNotificationSpam(updatedHabit, isDoneToday);
+        setHabits(nextHabits);
 
-            return updatedHabit;
-          })
-        );
+        const updatedHabit = nextHabits.find(h => h.id === selectedHabit.id);
+        if (updatedHabit) {
+           const isDoneToday = result.currentCount >= (selectedHabit.repetitionsPerDay || 1);
+           void filterNotificationSpam(updatedHabit, isDoneToday);
+        }
 
         const isForever = userPlan === 'forever';
         await Tokenomics.earnForValidation(isForever);
         if (note.trim()) await Tokenomics.earnForJournal(isForever);
 
-        // Jalons d'or (Spec 4.2)
-        const newStreak = selectedHabit.streak + 1;
+        const newStreak = result.streak;
         if ([7, 30, 100].includes(newStreak)) {
            await Tokenomics.earnForMilestone(newStreak, isForever);
            setTimeout(() => setShowMilestone(true), 500);
@@ -257,21 +233,57 @@ export function Dashboard() {
     setShowCheckIn(false);
   };
 
-  // --- Affichage ---
+  const handleAddHabit = () => {
+    if (userPlan === 'seedling' && habits.length >= 3) {
+      toast.error(t("limit_reached") as string || "Limite atteinte", {
+        description: t("seedling_limit_desc") as string || "Le forfait gratuit est limité à 3 habitudes.",
+        action: {
+          label: t("unlock") as string || "Débloquer",
+          onClick: () => navigate("/upgrade")
+        }
+      });
+      return;
+    }
+    navigate("/habit-create", { state: { mode: currentView } });
+  };
+
   const modeColor = currentView === "build" ? "#10B981" : "#8B5CF6";
   const buildCount = habits.filter(h => h.mode === "build").length;
   const quitCount = habits.filter(h => h.mode === "quit").length;
 
-  const itemsPerPage = 3;
-  const paginatedHabits = filteredHabits.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
-  const displayedHabits = showAll ? filteredHabits : paginatedHabits;
-  const totalPages = Math.ceil(filteredHabits.length / itemsPerPage);
+  const displayedHabits = filteredHabits;
+
+  const dynamicTagline = useMemo(() => {
+    const surveyData = location.state?.surveyAnswers;
+    if (surveyData?.reason === "quit") return t("dashboard_tagline_quit");
+    if (surveyData?.reason === "control") return t("dashboard_tagline_control");
+    if (surveyData?.reason === "build") return t("dashboard_tagline_build");
+    return t("dashboard_tagline");
+  }, [t, location.state]);
+
+  const days = useMemo(() => {
+    const arr = [];
+    const today = new Date();
+    const daysLabel = t("days_label") as string[];
+    for (let i = -2; i <= 3; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const dayOfWeek = d.getDay();
+      const labelIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      arr.push({
+        day: d.getDate(),
+        label: (daysLabel[labelIndex] || "").toUpperCase(),
+        isToday: i === 0,
+        fullDate: d.toISOString().split('T')[0]
+      });
+    }
+    return arr;
+  }, [t]);
 
   return (
     <>
       <PullToRefresh onRefresh={async () => { await new Promise(r => setTimeout(r, 1000)); }}>
         <div className="min-h-screen bg-white text-foreground pb-40 overflow-x-hidden">
-          {/* Header */}
           <header className="px-6 pt-4 pb-4">
             <div className="flex items-center justify-between mb-6">
               <button onClick={() => navigate("/habit-calendar")} className="p-2.5 rounded-2xl bg-white shadow-sm border border-gray-100 active:scale-95 transition-all">
@@ -301,7 +313,7 @@ export function Dashboard() {
                   {session.user?.avatarUrl ? (
                     <img src={session.user.avatarUrl} alt="Profile" className="w-full h-full object-cover rounded-xl" />
                   ) : (
-                    <img src="imports/Logo.png" alt="Sunny Bloom" className="w-8 h-8 object-contain" />
+                    <img src="assets/logo.png" alt="Sunny Bloom" className="w-8 h-8 object-contain" />
                   )}
                 </button>
               </div>
@@ -313,11 +325,11 @@ export function Dashboard() {
                   {(t("hi_user") as string).replace("{{name}}", userName)} <span className="inline-block animate-wave">👋</span>
                 </h1>
                 <p className="text-[#1C1917]/60 font-medium text-sm mt-1">
-                   {currentView === 'build' ? '🚀 On ancre ensemble ?' : '🧘 Douceur et liberté...'}
+                   {dynamicTagline as string}
                 </p>
                 <div className="flex items-center gap-2 mt-2">
                   <p className={`text-[10px] font-black uppercase tracking-widest ${currentView === 'build' ? 'text-green-600' : 'text-purple-600'}`}>
-                    {currentView === 'build' ? '🔥 Mode Encrage' : '🕊️ Mode Sevrage'}
+                    {currentView === 'build' ? t("build_mode_label") : t("quit_mode_label")}
                   </p>
                   {isPremium && <Crown size={10} className="text-[#F5C030]" />}
                 </div>
@@ -330,7 +342,7 @@ export function Dashboard() {
 
             <div className="mt-4 bg-[#F3F4F6] p-1.5 rounded-full flex relative">
               <button
-                onClick={() => { setCurrentViewWithParam("build"); setCurrentPage(0); setShowAll(false); }}
+                onClick={() => { setCurrentViewWithParam("build"); setShowAll(false); }}
                 className={`flex-1 py-3 rounded-full text-sm font-bold transition-all relative z-10 flex items-center justify-center gap-2 ${
                   currentView === "build" ? "bg-[#10B981] text-white shadow-md" : "text-[#1C1917]/40"
                 }`}
@@ -339,7 +351,7 @@ export function Dashboard() {
                 {buildCount > 0 && <span className="text-[10px] font-bold opacity-80">{buildCount}</span>}
               </button>
               <button
-                onClick={() => { setCurrentViewWithParam("quit"); setCurrentPage(0); setShowAll(false); }}
+                onClick={() => { setCurrentViewWithParam("quit"); setShowAll(false); }}
                 className={`flex-1 py-3 rounded-full text-sm font-bold transition-all relative z-10 flex items-center justify-center gap-2 ${
                   currentView === "quit" ? "bg-[#8B5CF6] text-white shadow-md" : "text-[#1C1917]/40"
                 }`}
@@ -350,12 +362,11 @@ export function Dashboard() {
             </div>
           </header>
 
-          {/* Pub Modérée (Spec 6.1) : Aucune pub sur Check-in ou Journal, seulement ici pour Seedling */}
           {userPlan === 'seedling' && (
             <div className="px-6 mb-6">
               <div className="bg-gray-50 border border-gray-100 rounded-3xl p-4 text-center border-dashed">
-                <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-1">Espace Partenaire</p>
-                <p className="text-[11px] text-gray-400 font-bold">Passe à Bloom Forever pour supprimer les publicités 🌻</p>
+                <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-1">{t("partner_space") as string}</p>
+                <p className="text-[11px] text-gray-400 font-bold">{t("upgrade_forever_desc") as string}</p>
               </div>
             </div>
           )}
@@ -441,7 +452,7 @@ export function Dashboard() {
                       <div>
                         <h4 className="font-bold text-[#1C1917] text-base leading-tight">{habit.name}</h4>
                         <p className="text-[11px] font-bold text-[#1C1917]/30 uppercase tracking-wide mt-1">
-                          {count} / {habit.repetitionsPerDay} {t("habit_done")}
+                          {count} / {habit.repetitionsPerDay} {currentView === 'build' ? t("habit_done") : t("freed_day")}
                         </p>
                       </div>
                     </div>
@@ -461,7 +472,7 @@ export function Dashboard() {
                 );
               }) : (
                 <div className="text-center py-10 bg-gray-50 rounded-[32px] border-2 border-dashed border-gray-200">
-                   <p className="text-sm font-bold text-gray-300 uppercase tracking-widest">Aucune habitude</p>
+                   <p className="text-sm font-bold text-gray-300 uppercase tracking-widest">{t("no_habits") as string}</p>
                 </div>
               )}
             </div>
@@ -470,7 +481,7 @@ export function Dashboard() {
               onClick={handleAddHabit}
               className="w-full mt-6 py-4 rounded-3xl border-2 border-dashed border-gray-200 text-gray-400 font-bold text-sm hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
             >
-              <Plus size={16} /> Ajouter une habitude
+              <Plus size={16} /> {t("add_habit_button") as string}
             </button>
           </div>
         </div>

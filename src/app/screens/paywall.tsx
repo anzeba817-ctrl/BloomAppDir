@@ -2,9 +2,10 @@
 
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
-import { ArrowLeft, Check, X, Crown, Sparkles, Shield, Infinity, Zap, Award } from "lucide-react";
+import { ArrowLeft, Check, X, Crown } from "lucide-react";
 import { SunnyMascot } from "../components/sunny-mascot";
 import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../contexts/LanguageContext";
 
 /**
  * Écran Paywall : Présente les forfaits Seedling, Bloom et Bloom Forever.
@@ -12,6 +13,7 @@ import { useAuth } from "../contexts/AuthContext";
 export function Paywall() {
   const navigate = useNavigate();
   const { session, upgradePlan } = useAuth();
+  const { t } = useLanguage();
   const currentPlan = session.user?.plan || 'seedling';
 
   const handleUpgrade = (plan: 'bloom' | 'forever') => {
@@ -22,55 +24,55 @@ export function Paywall() {
   const plans = [
     {
       id: 'seedling',
-      name: "SEEDLING",
+      name: t("plan_seedling"),
       price: "0 €",
-      period: "gratuit",
+      period: t("period_free"),
       features: [
-        { text: "Limité à 3 habitudes simultanées", included: true },
-        { text: "États basiques (Neutral, Growing, Blooming)", included: true },
-        { text: "Widget d'écran d'accueil (Sunny Classic)", included: true },
-        { text: "Statistiques élémentaires", included: true },
-        { text: "Cadence fixe (Quotidienne)", included: true },
-        { text: "Bannières publicitaires présentes", included: true, isNegative: true },
+        { text: t("feature_limit_3"), included: true },
+        { text: t("feature_basic_states"), included: true },
+        { text: t("feature_sunny_classic"), included: true },
+        { text: t("feature_basic_stats"), included: true },
+        { text: t("feature_fixed_cadence"), included: true },
+        { text: t("feature_ads_present"), included: true, isNegative: true },
       ],
-      buttonText: "Version actuelle",
+      buttonText: t("version_current"),
       color: "border-gray-100 bg-white",
       textColor: "text-[#1C1917]",
       isCurrent: currentPlan === 'seedling'
     },
     {
       id: 'bloom',
-      name: "BLOOM (Premium)",
+      name: t("plan_bloom"),
       price: "4.99 $",
-      period: "/ mois (ou 34.99$/an)",
+      period: t("period_monthly"),
       recommended: true,
       features: [
-        { text: "Nombre d'habitudes illimité", included: true },
-        { text: "Les 7 états émotionnels inclus", included: true },
-        { text: "Widgets Accueil + Verrouillage", included: true },
-        { text: "Heatmap complète & historique", included: true },
-        { text: "Cadence personnalisée (Hebdo, etc.)", included: true },
-        { text: "Aucune publicité", included: true },
-        { text: "+3 Cristaux offerts / mois", included: true, isBonus: true },
+        { text: t("feature_unlimited_habits"), included: true },
+        { text: t("feature_7_states"), included: true },
+        { text: t("feature_all_widgets"), included: true },
+        { text: t("feature_full_heatmap"), included: true },
+        { text: t("feature_custom_cadence"), included: true },
+        { text: t("feature_no_ads"), included: true },
+        { text: t("feature_3_crystals"), included: true, isBonus: true },
       ],
-      buttonText: "Passer à Bloom",
+      buttonText: t("pass_to_bloom"),
       color: "border-green-100 bg-green-50/20",
       textColor: "text-green-800",
       isCurrent: currentPlan === 'bloom'
     },
     {
       id: 'forever',
-      name: "BLOOM FOREVER",
+      name: t("plan_forever"),
       price: "79.99 $",
-      period: "paiement unique",
+      period: t("period_once"),
       features: [
-        { text: "Tout le forfait BLOOM", included: true },
-        { text: "Multiplicateur Pétales x1.5", included: true, isBonus: true },
-        { text: "Skin exclusive \"Legend\"", included: true, isBonus: true },
-        { text: "Badge Fondateur", included: true, isBonus: true },
-        { text: "Accès à vie illimité", included: true },
+        { text: t("feature_all_bloom"), included: true },
+        { text: t("feature_multiplier"), included: true, isBonus: true },
+        { text: t("feature_skin_legend"), included: true, isBonus: true },
+        { text: t("feature_founder_badge"), included: true, isBonus: true },
+        { text: t("feature_lifetime"), included: true },
       ],
-      buttonText: "Devenir Fondateur",
+      buttonText: t("become_founder"),
       color: "border-purple-100 bg-purple-50/20",
       textColor: "text-purple-800",
       isCurrent: currentPlan === 'forever'
@@ -79,7 +81,6 @@ export function Paywall() {
 
   return (
     <div className="min-h-screen bg-white pb-32 overflow-y-auto">
-      {/* En-tête */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-gray-50">
         <button
           onClick={() => navigate(-1)}
@@ -87,7 +88,7 @@ export function Paywall() {
         >
           <ArrowLeft className="w-5 h-5 text-[#1C1917]" />
         </button>
-        <h1 className="text-lg font-bold text-[#1C1917]">Forfaits Bloom</h1>
+        <h1 className="text-lg font-bold text-[#1C1917]">{t("paywall_title") as string}</h1>
         <div className="w-8" />
       </div>
 
@@ -98,8 +99,8 @@ export function Paywall() {
           className="text-center mb-12"
         >
           <SunnyMascot mood="overjoyed" size={100} className="mx-auto mb-4" />
-          <h1 className="text-3xl font-black text-[#1C1917] mb-2">Passe à la vitesse supérieure</h1>
-          <p className="text-gray-500 font-medium">Libère Sunny et débloque toutes tes capacités</p>
+          <h1 className="text-3xl font-black text-[#1C1917] mb-2">{t("upgrade_title") as string}</h1>
+          <p className="text-gray-500 font-medium">{t("upgrade_subtitle") as string}</p>
         </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -113,15 +114,15 @@ export function Paywall() {
             >
               {plan.recommended && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
-                  Conseillé
+                  {t("recommended") as string}
                 </div>
               )}
 
               <div className="mb-8">
-                <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-1">{plan.name}</h2>
+                <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-1">{plan.name as string}</h2>
                 <div className="flex items-baseline gap-1">
                   <span className={`text-3xl font-black ${plan.textColor}`}>{plan.price}</span>
-                  <span className="text-[10px] font-bold text-gray-400">{plan.period}</span>
+                  <span className="text-[10px] font-bold text-gray-400">{plan.period as string}</span>
                 </div>
               </div>
 
@@ -134,7 +135,7 @@ export function Paywall() {
                       <Check className={`w-4 h-4 shrink-0 mt-0.5 ${plan.id === 'forever' ? 'text-purple-500' : plan.id === 'bloom' ? 'text-green-500' : 'text-gray-300'}`} />
                     )}
                     <span className={`text-[11px] font-bold leading-tight ${feature.isBonus ? 'text-[#E8920A]' : 'text-[#1C1917]/70'}`}>
-                      {feature.text}
+                      {feature.text as string}
                     </span>
                   </div>
                 ))}
@@ -153,7 +154,7 @@ export function Paywall() {
                         : "bg-white border-2 border-gray-100 text-[#1C1917]"
                 }`}
               >
-                {plan.isCurrent ? "Actuel" : plan.buttonText}
+                {plan.isCurrent ? t("current_plan_label") : plan.buttonText as string}
               </button>
             </motion.div>
           ))}
@@ -162,4 +163,3 @@ export function Paywall() {
     </div>
   );
 }
- Broadway: Broadway

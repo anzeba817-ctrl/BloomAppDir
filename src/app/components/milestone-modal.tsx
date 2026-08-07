@@ -6,6 +6,7 @@ import { Share2, X, Sparkles } from "lucide-react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import confetti from "canvas-confetti";
+import { useLanguage } from "../contexts/LanguageContext";
 
 interface MilestoneModalProps {
   streak: number;
@@ -14,18 +15,15 @@ interface MilestoneModalProps {
 
 export function MilestoneModal({ streak, onClose }: MilestoneModalProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   useEffect(() => {
-    // Trigger confetti
     const duration = 3000;
     const animationEnd = Date.now() + duration;
 
     const interval = setInterval(() => {
       const timeLeft = animationEnd - Date.now();
-
-      if (timeLeft <= 0) {
-        return clearInterval(interval);
-      }
+      if (timeLeft <= 0) return clearInterval(interval);
 
       confetti({
         particleCount: 3,
@@ -48,10 +46,10 @@ export function MilestoneModal({ streak, onClose }: MilestoneModalProps) {
   }, []);
 
   const getMessage = () => {
-    if (streak === 7) return "sunny is growing strong!";
-    if (streak === 30) return "sunny is FULLY bloomed. tu did that.";
-    if (streak === 100) return "sunny is legendary now. incroyable.";
-    return "incroyable ! continue comme ça.";
+    if (streak === 7) return t("milestone_7_msg");
+    if (streak === 30) return t("milestone_30_msg");
+    if (streak === 100) return t("milestone_100_msg");
+    return t("milestone_default_msg");
   };
 
   return (
@@ -70,7 +68,6 @@ export function MilestoneModal({ streak, onClose }: MilestoneModalProps) {
         onClick={(e) => e.stopPropagation()}
         className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center relative overflow-hidden"
       >
-        {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 hover:bg-[#141D24]/5 rounded-full transition-colors z-10"
@@ -78,27 +75,24 @@ export function MilestoneModal({ streak, onClose }: MilestoneModalProps) {
           <X className="w-5 h-5 text-[#141D24]" />
         </button>
 
-        {/* Celebration badge */}
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.2, type: "spring" }}
-          className="inline-block bg-gradient-to-r from-[#E8920A] to-[#F5C030] text-white px-6 py-2 rounded-full text-sm mb-6"
+          className="inline-block bg-gradient-to-r from-[#E8920A] to-[#F5C030] text-white px-6 py-2 rounded-full text-sm mb-6 font-bold"
         >
-          🎉 jalon atteint !
+          {t("milestone_reached") as string}
         </motion.div>
 
-        {/* Sunny mascot */}
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1, rotate: [0, 10, -10, 0] }}
           transition={{ delay: 0.3, duration: 0.6 }}
           className="mb-6 flex justify-center"
         >
-          <SunnyMascot mood="overjoyed" variant="expressive" size={160} />
+          <SunnyMascot mood="overjoyed" size={160} />
         </motion.div>
 
-        {/* Streak number */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -106,20 +100,18 @@ export function MilestoneModal({ streak, onClose }: MilestoneModalProps) {
           className="mb-4"
         >
           <div className="text-6xl font-bold text-[#E8920A] mb-2">{streak}</div>
-          <div className="text-xl text-[#141D24]">jours de série</div>
+          <div className="text-xl text-[#141D24] font-bold">{t("streak_days") as string}</div>
         </motion.div>
 
-        {/* Message */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="text-lg text-[#141D24]/80 mb-8 leading-relaxed"
+          className="text-lg text-[#141D24]/80 mb-8 leading-relaxed font-medium"
         >
-          {getMessage()}
+          {getMessage() as string}
         </motion.p>
 
-        {/* Action buttons */}
         <div className="space-y-3">
           <motion.button
             initial={{ opacity: 0, y: 20 }}
@@ -127,14 +119,14 @@ export function MilestoneModal({ streak, onClose }: MilestoneModalProps) {
             transition={{ delay: 0.6 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="w-full bg-gradient-to-r from-[#E8920A] to-[#F5C030] text-white py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg"
+            className="w-full bg-gradient-to-r from-[#E8920A] to-[#F5C030] text-white py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg font-bold"
             onClick={() => {
               onClose();
               navigate("/celebration-dance", { state: { milestone: { streak, type: "week" } } });
             }}
           >
             <Sparkles className="w-5 h-5" />
-            danser avec sunny !
+            {t("dance_with_sunny") as string}
           </motion.button>
 
           <motion.button
@@ -143,26 +135,24 @@ export function MilestoneModal({ streak, onClose }: MilestoneModalProps) {
             transition={{ delay: 0.65 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="w-full bg-white text-[#E8920A] py-4 rounded-2xl flex items-center justify-center gap-2 border-2 border-[#E8920A]/20"
+            className="w-full bg-white text-[#E8920A] py-4 rounded-2xl flex items-center justify-center gap-2 border-2 border-[#E8920A]/20 font-bold"
             onClick={() => {
               if (navigator.share) {
                 navigator.share({
                   title: "Bloom Achievement",
-                  text: `${streak} jours de série sur Bloom ! 🌻`,
+                  text: (t("share_text") as string).replace("{{streak}}", streak.toString()),
                 });
               }
             }}
           >
             <Share2 className="w-5 h-5" />
-            partager mon succès
+            {t("share_success") as string}
           </motion.button>
         </div>
 
-        {/* Decorative elements */}
         <div className="absolute -top-10 -left-10 w-32 h-32 bg-[#F5C030] rounded-full blur-3xl opacity-20" />
         <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-[#3A7D4F] rounded-full blur-3xl opacity-20" />
       </motion.div>
     </motion.div>
   );
 }
-

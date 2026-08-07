@@ -9,12 +9,17 @@ import { SunnyMascot } from "../components/sunny-mascot";
 import { queueHabitCheckIn, incrementLocalPetals } from "../utils/offline-sync";
 import { playSound } from "../utils/audio";
 import { useAudio } from "../contexts/AudioContext";
+import { useLanguage } from "../contexts/LanguageContext";
 import { toast } from "sonner";
 
+/**
+ * Écran d'Action de Validation : S'affiche au clic d'une notification.
+ */
 export function HabitValidationAction() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { soundEnabled } = useAudio();
+  const { t } = useLanguage();
   const [habits, setHabits] = useLocalStorage<Habit[]>("bloom-habits", []);
 
   const habit = habits.find(h => h.id === id);
@@ -58,7 +63,7 @@ export function HabitValidationAction() {
 
     await incrementLocalPetals(1);
     playSound("sounds/success-chime.mp3", soundEnabled);
-    toast.success(`Super ! ${habit.name} validé.`);
+    toast.success((t("habit_validated_success") as string).replace("{{name}}", habit.name));
     navigate("/dashboard");
   };
 
@@ -70,13 +75,13 @@ export function HabitValidationAction() {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
         <Bell className="w-12 h-12 text-gray-200 mb-4" />
-        <h1 className="text-xl font-bold text-[#1C1917]">Oups !</h1>
-        <p className="text-gray-500 mb-8">Cette habitude n'existe plus ou a été supprimée.</p>
+        <h1 className="text-xl font-bold text-[#1C1917]">{t("error_oops") as string}</h1>
+        <p className="text-gray-500 mb-8">{t("error_habit_not_found") as string}</p>
         <button
           onClick={() => navigate("/dashboard")}
           className="px-8 py-3 bg-[#1C1917] text-white rounded-2xl font-bold"
         >
-          Retour au tableau de bord
+          {t("back_to_dashboard") as string}
         </button>
       </div>
     );
@@ -93,9 +98,9 @@ export function HabitValidationAction() {
           <SunnyMascot mood="neutral" size={160} />
         </div>
 
-        <h1 className="text-3xl font-black text-[#1C1917] mb-2">C'est l'heure !</h1>
+        <h1 className="text-3xl font-black text-[#1C1917] mb-2">{t("its_time") as string}</h1>
         <p className="text-lg font-medium text-[#1C1917]/60 mb-8">
-          Est-ce que tu as réalisé ton habitude <br/>
+          {t("did_you_realize") as string} <br/>
           <span className="text-[#1C1917] font-bold">"{habit.name}"</span> ?
         </p>
 
@@ -107,7 +112,7 @@ export function HabitValidationAction() {
             <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-sm group-active:bg-gray-100 transition-colors">
               <X className="w-7 h-7 text-gray-400" />
             </div>
-            <span className="font-bold text-gray-400">Ignorer</span>
+            <span className="font-bold text-gray-400">{t("ignore") as string}</span>
           </button>
 
           <button
@@ -123,7 +128,7 @@ export function HabitValidationAction() {
             </div>
             <span className={`font-bold ${
               habit.mode === 'build' ? 'text-green-600' : 'text-purple-600'
-            }`}>Valider</span>
+            }`}>{t("validate") as string}</span>
           </button>
         </div>
       </motion.div>
