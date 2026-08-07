@@ -1383,12 +1383,6 @@ export const translations = {
     mood_neutral: "neutral",
     mood_hard: "diffícil",
     mood_tough: "duro",
-
-    signup_title: "Crear mi cuenta",
-    signup_password_placeholder: "Contraseña",
-    signup_confirm_password_placeholder: "Confirmar contraseña",
-    signup_cta: "Registrarse",
-    signup_consent_error: "Debes aceptar los términos para continuar.",
   },
 } as const;
 

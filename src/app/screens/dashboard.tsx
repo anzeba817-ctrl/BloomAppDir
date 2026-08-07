@@ -74,7 +74,11 @@ export function Dashboard() {
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
   const [sunnyAnimation, setSunnyAnimation] = useState<SunnyMood | null>(null);
   const [showAll, setShowAll] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    // Spec 7.2 : On initialise avec le jour logique (gestion Night Owl)
+    const now = new Date().toISOString();
+    return getLogicalDayFromUtc(now);
+  });
 
   const userName = session.user?.displayName || "User";
 

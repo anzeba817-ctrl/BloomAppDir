@@ -171,8 +171,11 @@ export async function queueHabitCheckIn(payload: {
   const timestampUtc = now.toISOString();
   const timezoneOffset = now.getTimezoneOffset(); // en minutes
 
-  // Calcul du jour logique selon l'heure de coupure (Spec 7.2)
-  const logicalDate = getLogicalDayFromUtc(timestampUtc);
+  // On utilise la date fournie comme date logique, sauf si on est en train de valider "aujourd'hui"
+  // Auquel cas on applique la règle de l'oiseau de nuit (Night Owl)
+  const isToday = payload.date === now.toISOString().split('T')[0];
+  const logicalDate = isToday ? getLogicalDayFromUtc(timestampUtc) : payload.date;
+
   const validationId = `${payload.habitId}:${logicalDate}`;
 
   // Récupération de l'état actuel pour incrémenter
