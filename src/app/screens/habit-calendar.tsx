@@ -4,7 +4,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { DayPicker } from "react-day-picker";
-import type { DayContentProps } from "react-day-picker";
 import { format } from "date-fns";
 import { fr, enUS, es } from "date-fns/locale";
 import type { Habit } from "../types/habit";
@@ -53,21 +52,6 @@ export function HabitCalendar() {
   }, [habits, currentView]);
 
   const dateLocale = lang === "fr" ? fr : lang === "es" ? es : enUS;
-
-  const DayContent = ({ date }: DayContentProps) => {
-    const dateKey = format(date, "yyyy-MM-dd");
-    const dayCheckIns = checkInsByDate[dateKey] || [];
-    const hasActivity = dayCheckIns.length > 0;
-
-    return (
-      <div className="relative w-full h-full flex items-center justify-center">
-        <span className="z-10 text-sm">{date.getDate()}</span>
-        {hasActivity && (
-          <div className={`absolute bottom-1 w-1 h-1 rounded-full shadow-sm ${currentView === 'build' ? 'bg-green-500' : 'bg-purple-500'}`} />
-        )}
-      </div>
-    );
-  };
 
   const selectedDateKey = format(selectedDate, "yyyy-MM-dd");
   const dayOfWeek = selectedDate.getDay();
@@ -128,13 +112,34 @@ export function HabitCalendar() {
             month={currentMonth}
             onMonthChange={setCurrentMonth}
             selected={selectedDate}
-            onDayClick={setSelectedDate}
-            components={{ DayContent }}
+            onSelect={(date) => date && setSelectedDate(date)}
             locale={dateLocale}
             className="!font-sans m-0"
+            modifiers={{
+              hasActivity: (date) => {
+                const dateKey = format(date, "yyyy-MM-dd");
+                return (checkInsByDate[dateKey] || []).length > 0;
+              }
+            }}
+            modifiersStyles={{
+              hasActivity: {
+                fontWeight: "bold",
+                textDecoration: "underline",
+                textDecorationColor: currentView === 'build' ? "#10B981" : "#8B5CF6",
+                textDecorationThickness: "3px"
+              }
+            }}
             styles={{
-              head_cell: { color: "#94979f", fontWeight: 700, fontSize: "0.75rem" },
-              day: { borderRadius: "14px", width: "2.6rem", height: "2.6rem", fontWeight: 600 },
+              month_caption: { display: "flex", justifyContent: "center", paddingBottom: "1rem", position: "relative", alignItems: "center", width: "100%" },
+              caption_label: { fontSize: "0.875rem", fontWeight: 700 },
+              nav: { display: "flex", alignItems: "center", gap: "0.25rem" },
+              button_previous: { position: "absolute", left: "0.25rem" },
+              button_next: { position: "absolute", right: "0.25rem" },
+              month_grid: { width: "100%", borderCollapse: "collapse" },
+              weekdays: { display: "flex" },
+              weekday: { color: "#94979f", fontWeight: 700, fontSize: "0.75rem", width: "2.6rem", textAlign: "center" },
+              week: { display: "flex", width: "100%", marginTop: "0.5rem" },
+              day: { borderRadius: "14px", width: "2.6rem", height: "2.6rem", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" },
               selected: { backgroundColor: "#1C1917", color: "white" }
             }}
           />

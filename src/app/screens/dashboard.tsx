@@ -32,7 +32,8 @@ import {
   queueHabitUpsert,
   readLocalCurrency,
   startSyncOnReconnect,
-  activateBloomShield
+  activateBloomShield,
+  getLogicalDayFromUtc
 } from "../utils/offline-sync";
 import { Tokenomics } from "../utils/tokenomics";
 import { computeSunnyMood } from "../utils/mood-logic";
