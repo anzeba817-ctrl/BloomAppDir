@@ -4,8 +4,45 @@ import { motion, AnimatePresence } from "motion/react";
 import { PenLine, X, Trash2, Edit2, ChevronLeft } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import { useAnimation } from "../contexts/AnimationContext";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+function JournalEntryContent({ entry, formatDate, handleEdit, handleDelete }: any) {
+  return (
+    <>
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
+            {entry.mood}
+          </div>
+          <div>
+            <p className="text-[11px] font-bold text-[#1C1917]/30 uppercase tracking-widest">
+              {formatDate(entry.date)}
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={() => handleEdit(entry)}
+            className="p-2 text-gray-400 hover:text-[#1C1917] transition-colors"
+          >
+            <Edit2 size={16} />
+          </button>
+          <button
+            onClick={() => handleDelete(entry.id)}
+            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </div>
+      <p className="text-[#1C1917]/70 leading-relaxed text-sm whitespace-pre-wrap">
+        {entry.text}
+      </p>
+    </>
+  );
+}
 
 /**
  * Interface pour une entrée de journal.
@@ -23,6 +60,7 @@ interface JournalEntry {
 export function Journal() {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { animationsEnabled } = useAnimation();
 
   const moods = [
     { icon: "🌟", label: t("mood_radiant") as string },
@@ -122,43 +160,24 @@ export function Journal() {
         ) : (
           <div className="space-y-6">
             {entries.map((entry) => (
-              <motion.div
-                key={entry.id}
-                layout
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-[28px] border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all group"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
-                      {entry.mood}
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-bold text-[#1C1917]/30 uppercase tracking-widest">
-                        {formatDate(entry.date)}
-                      </p>
-                    </div>
+              <div key={entry.id}>
+                {animationsEnabled ? (
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-[28px] border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all group"
+                  >
+                    <JournalEntryContent entry={entry} formatDate={formatDate} handleEdit={handleEdit} handleDelete={handleDelete} />
+                  </motion.div>
+                ) : (
+                  <div
+                    className="bg-white rounded-[28px] border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all group"
+                  >
+                    <JournalEntryContent entry={entry} formatDate={formatDate} handleEdit={handleEdit} handleDelete={handleDelete} />
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => handleEdit(entry)}
-                      className="p-2 text-gray-400 hover:text-[#1C1917] transition-colors"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(entry.id)}
-                      className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-                <p className="text-[#1C1917]/70 leading-relaxed text-sm whitespace-pre-wrap">
-                  {entry.text}
-                </p>
-              </motion.div>
+                )}
+              </div>
             ))}
           </div>
         )}

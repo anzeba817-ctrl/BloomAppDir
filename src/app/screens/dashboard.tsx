@@ -22,6 +22,7 @@ import { CheckInModal } from "../components/check-in-modal";
 import { MilestoneModal } from "../components/milestone-modal";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useAudio } from "../contexts/AudioContext";
+import { useAnimation } from "../contexts/AnimationContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { playSound } from "../utils/audio";
@@ -41,6 +42,58 @@ import { filterNotificationSpam } from "../utils/notifications";
 import { toast } from "sonner";
 
 /**
+ * Composant interne pour le contenu d'une carte d'habitude
+ */
+function HabitCardContent({
+  habit, count, isFullyDone, modeColor, handleCheckIn, navigate, handleQuickCheckIn, t, currentView
+}: any) {
+  const { animationsEnabled } = useAnimation();
+  return (
+    <>
+      <div className="flex items-center gap-4 flex-1" onClick={() => !isFullyDone && handleCheckIn(habit)}>
+        <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center shrink-0 relative">
+          <Zap size={20} style={{ color: modeColor }} />
+          <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
+            <circle cx="24" cy="24" r="22" className="stroke-gray-100 fill-none" strokeWidth="2" />
+            {animationsEnabled ? (
+              <motion.circle
+                cx="24" cy="24" r="22" className="fill-none" style={{ stroke: modeColor }} strokeWidth="2"
+                strokeDasharray="138" initial={{ strokeDashoffset: 138 }}
+                animate={{ strokeDashoffset: 138 - (138 * Math.min(count / habit.repetitionsPerDay, 1)) }}
+              />
+            ) : (
+              <circle
+                cx="24" cy="24" r="22" className="fill-none" style={{ stroke: modeColor }} strokeWidth="2"
+                strokeDasharray="138"
+                strokeDashoffset={138 - (138 * Math.min(count / habit.repetitionsPerDay, 1))}
+              />
+            )}
+          </svg>
+        </div>
+        <div>
+          <h4 className="font-bold text-[#1C1917] text-base leading-tight">{habit.name}</h4>
+          <p className="text-[11px] font-bold text-[#1C1917]/30 uppercase tracking-wide mt-1">
+            {count} / {habit.repetitionsPerDay} {currentView === 'build' ? t("habit_done") : t("freed_day")}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <button onClick={(e) => { e.stopPropagation(); navigate("/habit-create", { state: { habit } }); }} className="p-2 rounded-xl bg-gray-50 text-gray-400">
+          <Settings2 size={18} />
+        </button>
+        <button onClick={(e) => { e.stopPropagation(); !isFullyDone && handleQuickCheckIn(habit); }}
+          className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${
+            isFullyDone ? "bg-green-500 text-white" : "bg-white text-[#1C1917]/20 border border-gray-100"
+          }`}
+        >
+          {isFullyDone ? <Check size={20} /> : <Plus size={20} />}
+        </button>
+      </div>
+    </>
+  );
+}
+
+/**
  * DASHBOARD PRINCIPAL - Cœur de l'expérience Bloom.
  */
 export function Dashboard() {
@@ -49,6 +102,7 @@ export function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useLanguage();
   const { soundEnabled } = useAudio();
+  const { animationsEnabled } = useAnimation();
   const { session, isPremium } = useAuth();
   const userPlan = session.user?.plan || 'seedling';
 
@@ -84,6 +138,34 @@ export function Dashboard() {
   const userName = session.user?.displayName || "User";
 
   const [habits, setHabits] = useLocalStorage<Habit[]>("bloom-habits", []);
+
+  // Spec 7.4 : Synchronisation des habitudes avec le système offline (SQLite)
+  useEffect(() => {
+    const syncHabits = async () => {
+      for (const h of habits) {
+        await queueHabitUpsert(h);
+      }
+    };
+    void syncHabits();
+  }, []);
+
+  useEffect(() => {
+    if (location.state?.newHabit) {
+      const h = location.state.newHabit as Habit;
+      void queueHabitUpsert(h);
+      setHabits(prev => [h, ...prev]);
+      navigate(location.pathname + location.search, { replace: true, state: {} });
+    } else if (location.state?.updatedHabit) {
+      const h = location.state.updatedHabit as Habit;
+      void queueHabitUpsert(h);
+      setHabits(prev => prev.map(old => old.id === h.id ? h : old));
+      navigate(location.pathname + location.search, { replace: true, state: {} });
+    } else if (location.state?.deleteHabitId) {
+      const id = location.state.deleteHabitId as string;
+      setHabits(prev => prev.filter(h => h.id !== id));
+      navigate(location.pathname + location.search, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname, location.search, setHabits]);
 
   const currentMood = useMemo(() => {
     if (sunnyAnimation) return sunnyAnimation;
@@ -160,80 +242,93 @@ export function Dashboard() {
 
   const handleQuickCheckIn = (habit: Habit) => {
     void (async () => {
-      const result = await queueHabitCheckIn({ habitId: habit.id, date: selectedDate });
+      try {
+        // Sécurité : On s'assure que l'habitude est présente en base SQLite avant validation
+        await queueHabitUpsert(habit);
 
-      const nextHabits = habits.map((h) => {
-        if (h.id !== habit.id) return h;
-        const existingEntryIndex = h.history.findIndex((entry) => entry.date === result.logicalDate);
-        let nextHistory = [...h.history];
-        if (existingEntryIndex >= 0) {
-          nextHistory[existingEntryIndex] = { ...nextHistory[existingEntryIndex], completedCount: result.currentCount };
-        } else {
-          nextHistory.push({ date: result.logicalDate, completedCount: result.currentCount });
-        }
-        return { ...h, streak: result.streak, lastCheckIn: result.lastCheckIn, history: nextHistory };
-      });
+        const result = await queueHabitCheckIn({ habitId: habit.id, date: selectedDate });
 
-      setHabits(nextHabits);
+        setHabits((prev) => {
+          return prev.map((h) => {
+            if (h.id !== habit.id) return h;
+            const existingEntryIndex = h.history.findIndex((entry) => entry.date === result.logicalDate);
+            let nextHistory = [...h.history];
+            if (existingEntryIndex >= 0) {
+              nextHistory[existingEntryIndex] = { ...nextHistory[existingEntryIndex], completedCount: result.currentCount };
+            } else {
+              nextHistory.push({ date: result.logicalDate, completedCount: result.currentCount });
+            }
+            const updated = { ...h, streak: result.streak, lastCheckIn: result.lastCheckIn, history: nextHistory };
 
-      const updatedHabit = nextHabits.find(h => h.id === habit.id);
-      if (updatedHabit) {
-        const isDoneToday = result.currentCount >= (habit.repetitionsPerDay || 1);
-        void filterNotificationSpam(updatedHabit, isDoneToday);
+            // Suppression anti-spam si complété
+            const isDoneToday = result.currentCount >= (h.repetitionsPerDay || 1);
+            void filterNotificationSpam(updated, isDoneToday);
+
+            return updated;
+          });
+        });
+
+        const isForever = userPlan === 'forever';
+        const nextPetals = await Tokenomics.earnForValidation(isForever);
+        setPetals(nextPetals);
+        await refreshCurrency();
+
+        playSound("sounds/success-chime.mp3", soundEnabled);
+        setSunnyAnimation("growing");
+        setTimeout(() => setSunnyAnimation(null), 1500);
+      } catch (error) {
+        console.error("Bloom: Erreur lors de la validation rapide", error);
+        toast.error(t("error_validation_failed") as string || "Erreur lors de la validation.");
       }
-
-      const isForever = userPlan === 'forever';
-      const nextPetals = await Tokenomics.earnForValidation(isForever);
-      setPetals(nextPetals);
-      await refreshCurrency();
-
-      playSound("sounds/success-chime.mp3", soundEnabled);
-      setSunnyAnimation("growing");
-      setTimeout(() => setSunnyAnimation(null), 1500);
     })();
   };
 
   const handleCheckInComplete = (mood: string, note: string) => {
     if (selectedHabit) {
       void (async () => {
-        const result = await queueHabitCheckIn({ habitId: selectedHabit.id, date: selectedDate, mood, note });
+        try {
+          await queueHabitUpsert(selectedHabit);
+          const result = await queueHabitCheckIn({ habitId: selectedHabit.id, date: selectedDate, mood, note });
 
-        const nextHabits = habits.map((h) => {
-          if (h.id !== selectedHabit.id) return h;
-          const existingEntryIndex = h.history.findIndex((entry) => entry.date === result.logicalDate);
-          let nextHistory = [...h.history];
-          if (existingEntryIndex >= 0) {
-            nextHistory[existingEntryIndex] = { ...nextHistory[existingEntryIndex], completedCount: result.currentCount, mood, note };
-          } else {
-            nextHistory.push({ date: result.logicalDate, completedCount: result.currentCount, mood, note });
+          setHabits((prev) => {
+            return prev.map((h) => {
+              if (h.id !== selectedHabit.id) return h;
+              const existingEntryIndex = h.history.findIndex((entry) => entry.date === result.logicalDate);
+              let nextHistory = [...h.history];
+              if (existingEntryIndex >= 0) {
+                nextHistory[existingEntryIndex] = { ...nextHistory[existingEntryIndex], completedCount: result.currentCount, mood, note };
+              } else {
+                nextHistory.push({ date: result.logicalDate, completedCount: result.currentCount, mood, note });
+              }
+              const updated = { ...h, streak: result.streak, lastCheckIn: result.lastCheckIn, history: nextHistory };
+
+              const isDoneToday = result.currentCount >= (h.repetitionsPerDay || 1);
+              void filterNotificationSpam(updated, isDoneToday);
+
+              return updated;
+            });
+          });
+
+          const isForever = userPlan === 'forever';
+          await Tokenomics.earnForValidation(isForever);
+          if (note.trim()) await Tokenomics.earnForJournal(isForever);
+
+          const newStreak = result.streak;
+          if ([7, 30, 100].includes(newStreak)) {
+            await Tokenomics.earnForMilestone(newStreak, isForever);
+            setTimeout(() => setShowMilestone(true), 500);
           }
-          return { ...h, streak: result.streak, lastCheckIn: result.lastCheckIn, history: nextHistory };
-        });
 
-        setHabits(nextHabits);
+          await refreshCurrency();
 
-        const updatedHabit = nextHabits.find(h => h.id === selectedHabit.id);
-        if (updatedHabit) {
-           const isDoneToday = result.currentCount >= (selectedHabit.repetitionsPerDay || 1);
-           void filterNotificationSpam(updatedHabit, isDoneToday);
+          playSound("sounds/success-chime.mp3", soundEnabled);
+          setSunnyAnimation("overjoyed");
+          setTimeout(() => setSunnyAnimation(null), 3000);
+        } catch (error) {
+          console.error("Bloom: Erreur lors du check-in complet", error);
+          toast.error(t("error_validation_failed") as string || "Erreur lors de la validation.");
         }
-
-        const isForever = userPlan === 'forever';
-        await Tokenomics.earnForValidation(isForever);
-        if (note.trim()) await Tokenomics.earnForJournal(isForever);
-
-        const newStreak = result.streak;
-        if ([7, 30, 100].includes(newStreak)) {
-           await Tokenomics.earnForMilestone(newStreak, isForever);
-           setTimeout(() => setShowMilestone(true), 500);
-        }
-
-        await refreshCurrency();
       })();
-
-      playSound("sounds/success-chime.mp3", soundEnabled);
-      setSunnyAnimation("overjoyed");
-      setTimeout(() => setSunnyAnimation(null), 3000);
     }
     setShowCheckIn(false);
   };
@@ -396,30 +491,38 @@ export function Dashboard() {
             </div>
           </div>
 
-          <div className="px-6 pb-8">
-            <div className={`rounded-[32px] p-6 text-white shadow-xl flex items-center gap-6 transition-all duration-500`} style={{ backgroundColor: modeColor }}>
-              <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
-                <svg className="w-full h-full -rotate-90">
-                  <circle cx="32" cy="32" r="28" className="stroke-white/20 fill-none" strokeWidth="4" />
-                  <motion.circle
-                    cx="32" cy="32" r="28" className="stroke-white fill-none" strokeWidth="4"
-                    strokeDasharray="176" initial={{ strokeDashoffset: 176 }}
-                    animate={{ strokeDashoffset: 176 - (176 * progressPercent) / 100 }}
-                    transition={{ duration: 1, ease: "easeOut" }}
-                  />
-                </svg>
-                <span className="absolute text-sm font-bold">%{progressPercent}</span>
-              </div>
-              <div className="flex-1 space-y-1">
-                <h3 className="font-bold text-lg leading-tight">{t("daily_goals_title") as string}</h3>
-                <p className="text-white/80 text-sm font-medium">
-                  {(t("daily_goals_subtitle") as string)
-                    .replace("{{completed}}", stats.fullyCompletedCount.toString())
-                    .replace("{{total}}", stats.totalHabits.toString())}
-                </p>
+            <div className="px-6 pb-8">
+              <div className={`rounded-[32px] p-6 text-white shadow-xl flex items-center gap-6 transition-all duration-500`} style={{ backgroundColor: modeColor }}>
+                <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
+                  <svg className="w-full h-full -rotate-90">
+                    <circle cx="32" cy="32" r="28" className="stroke-white/20 fill-none" strokeWidth="4" />
+                    {animationsEnabled ? (
+                      <motion.circle
+                        cx="32" cy="32" r="28" className="stroke-white fill-none" strokeWidth="4"
+                        strokeDasharray="176" initial={{ strokeDashoffset: 176 }}
+                        animate={{ strokeDashoffset: 176 - (176 * progressPercent) / 100 }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                      />
+                    ) : (
+                      <circle
+                        cx="32" cy="32" r="28" className="stroke-white fill-none" strokeWidth="4"
+                        strokeDasharray="176"
+                        strokeDashoffset={176 - (176 * progressPercent) / 100}
+                      />
+                    )}
+                  </svg>
+                  <span className="absolute text-sm font-bold">%{progressPercent}</span>
+                </div>
+                <div className="flex-1 space-y-1">
+                  <h3 className="font-bold text-lg leading-tight">{t("daily_goals_title") as string}</h3>
+                  <p className="text-white/80 text-sm font-medium">
+                    {(t("daily_goals_subtitle") as string)
+                      .replace("{{completed}}", stats.fullyCompletedCount.toString())
+                      .replace("{{total}}", stats.totalHabits.toString())}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
           <div className="px-6 pb-6">
             <div className="flex items-center justify-between mb-4">
@@ -436,44 +539,26 @@ export function Dashboard() {
                 const isFullyDone = count >= habit.repetitionsPerDay;
 
                 return (
-                  <motion.div
-                    key={habit.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                    className={`bg-white rounded-[24px] p-4 flex items-center justify-between shadow-sm border transition-all ${
-                      isFullyDone ? "border-green-100 bg-green-50/10" : "border-gray-100"
-                    }`}
-                  >
-                    <div className="flex items-center gap-4 flex-1" onClick={() => !isFullyDone && handleCheckIn(habit)}>
-                      <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center shrink-0 relative">
-                         <Zap size={20} style={{ color: modeColor }} />
-                         <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
-                            <circle cx="24" cy="24" r="22" className="stroke-gray-100 fill-none" strokeWidth="2" />
-                            <motion.circle
-                              cx="24" cy="24" r="22" className="fill-none" style={{ stroke: modeColor }} strokeWidth="2"
-                              strokeDasharray="138" initial={{ strokeDashoffset: 138 }}
-                              animate={{ strokeDashoffset: 138 - (138 * Math.min(count / habit.repetitionsPerDay, 1)) }}
-                            />
-                         </svg>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-[#1C1917] text-base leading-tight">{habit.name}</h4>
-                        <p className="text-[11px] font-bold text-[#1C1917]/30 uppercase tracking-wide mt-1">
-                          {count} / {habit.repetitionsPerDay} {currentView === 'build' ? t("habit_done") : t("freed_day")}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={(e) => { e.stopPropagation(); navigate("/habit-create", { state: { habit } }); }} className="p-2 rounded-xl bg-gray-50 text-gray-400">
-                        <Settings2 size={18} />
-                      </button>
-                      <button onClick={(e) => { e.stopPropagation(); !isFullyDone && handleQuickCheckIn(habit); }}
-                        className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${
-                          isFullyDone ? "bg-green-500 text-white" : "bg-white text-[#1C1917]/20 border border-gray-100"
+                  <div key={habit.id}>
+                    {animationsEnabled ? (
+                      <motion.div
+                        layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                        className={`bg-white rounded-[24px] p-4 flex items-center justify-between shadow-sm border transition-all ${
+                          isFullyDone ? "border-green-100 bg-green-50/10" : "border-gray-100"
                         }`}
                       >
-                        {isFullyDone ? <Check size={20} /> : <Plus size={20} />}
-                      </button>
-                    </div>
-                  </motion.div>
+                        <HabitCardContent habit={habit} count={count} isFullyDone={isFullyDone} modeColor={modeColor} handleCheckIn={handleCheckIn} navigate={navigate} handleQuickCheckIn={handleQuickCheckIn} t={t} currentView={currentView} />
+                      </motion.div>
+                    ) : (
+                      <div
+                        className={`bg-white rounded-[24px] p-4 flex items-center justify-between shadow-sm border transition-all ${
+                          isFullyDone ? "border-green-100 bg-green-50/10" : "border-gray-100"
+                        }`}
+                      >
+                        <HabitCardContent habit={habit} count={count} isFullyDone={isFullyDone} modeColor={modeColor} handleCheckIn={handleCheckIn} navigate={navigate} handleQuickCheckIn={handleQuickCheckIn} t={t} currentView={currentView} />
+                      </div>
+                    )}
+                  </div>
                 );
               }) : (
                 <div className="text-center py-10 bg-gray-50 rounded-[32px] border-2 border-dashed border-gray-200">

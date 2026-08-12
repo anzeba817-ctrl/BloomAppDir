@@ -58,24 +58,18 @@ export function PageLayout() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-foreground">
       <div className="relative mx-auto min-h-screen max-w-6xl px-0 pb-32 sm:px-4 lg:px-6">
-        {animationsEnabled ? (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, y: 18, scale: 0.985 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -18, scale: 0.985 }}
-              transition={{ type: "spring", stiffness: 260, damping: 24 }}
-              className="min-h-screen"
-            >
-              <Outlet />
-            </motion.div>
-          </AnimatePresence>
-        ) : (
-          <div className="min-h-screen">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={animationsEnabled ? { opacity: 0, y: 10 } : { opacity: 1, y: 0 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={animationsEnabled ? { opacity: 0, y: -10 } : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="min-h-screen"
+          >
             <Outlet />
-          </div>
-        )}
+          </motion.div>
+        </AnimatePresence>
       </div>
       {!shouldHideNav && <BottomNav />}
     </div>

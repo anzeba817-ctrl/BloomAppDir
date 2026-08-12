@@ -25,6 +25,255 @@ const THEME_DETAILS: Record<Theme, { labelKey: string; icon: string }> = {
   custom: { labelKey: "custom_colors", icon: "🎨" },
 };
 
+function PremiumBannerContent({ t }: { t: any }) {
+  return (
+    <>
+      <div className="relative z-10">
+        <div className="flex items-center gap-2 mb-2">
+          <Crown className="w-5 h-5" />
+          <span className="text-sm font-semibold">{t("bloom_premium") as string}</span>
+        </div>
+        <p className="text-sm text-white/90 mb-3">
+          {t("premium_desc") as string}
+        </p>
+        <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full text-sm font-medium backdrop-blur-md">
+          <Sparkles className="w-4 h-4" />
+          <span>{t("discover") as string}</span>
+        </div>
+      </div>
+      <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+    </>
+  );
+}
+
+function SettingsAccordion({
+  t, setTheme, theme, customColors, setCustomColor, soundEnabled, toggleSound, animationsEnabled, toggleAnimations, notifications, setNotifications, notificationExamples, navigate, lang, setLang
+}: any) {
+  return (
+    <Accordion type="multiple" defaultValue={["appearance"]} className="w-full">
+      <AccordionItem value="appearance" className="border-none">
+        <AccordionTrigger className="px-2 py-3 hover:no-underline">
+          <div className="text-left">
+            <h2 className="text-lg font-semibold text-card-foreground">{t("appearance") as string}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{t("appearance_desc") as string}</p>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="px-2 pb-2">
+          <div className="grid grid-cols-3 gap-3 md:grid-cols-6">
+            {themes.map((themeKey) => (
+              <button
+                key={themeKey}
+                onClick={() => setTheme(themeKey)}
+                className={`flex flex-col items-center gap-2 rounded-[20px] border-2 p-3 text-center transition-all ${
+                  theme === themeKey
+                    ? "border-primary bg-primary/10 shadow-sm"
+                    : "border-border/40 bg-muted/30 hover:border-primary/40 hover:bg-muted/50"
+                }`}
+              >
+                <span className="text-xl">{THEME_DETAILS[themeKey].icon}</span>
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${theme === themeKey ? "text-primary" : "text-muted-foreground"}`}>
+                  {t(THEME_DETAILS[themeKey].labelKey as any) as string}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {theme === "custom" && (
+            <div className="mt-4">
+              {animationsEnabled ? (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="space-y-3 rounded-2xl border border-border/60 bg-background/50 p-4"
+                >
+                  <CustomColors t={t} customColors={customColors} setCustomColor={setCustomColor} />
+                </motion.div>
+              ) : (
+                <div className="space-y-3 rounded-2xl border border-border/60 bg-background/50 p-4">
+                  <CustomColors t={t} customColors={customColors} setCustomColor={setCustomColor} />
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+              <div className="flex items-center gap-3">
+                {soundEnabled ? <Volume2 className="h-5 w-5 text-foreground" /> : <VolumeX className="h-5 w-5 text-muted-foreground" />}
+                <div>
+                  <div className="font-medium text-card-foreground">{t("sound_effects") as string}</div>
+                  <div className="text-sm text-muted-foreground">{soundEnabled ? (t("sound_effects_on_label") as string) : (t("sound_effects_off_label") as string)}</div>
+                </div>
+              </div>
+              <button onClick={toggleSound} className={`relative h-8 w-14 rounded-full transition-colors ${soundEnabled ? "bg-primary" : "bg-muted"}`}>
+                {animationsEnabled ? (
+                  <motion.div className="absolute top-1 h-6 w-6 rounded-full bg-white shadow-md" animate={{ left: soundEnabled ? "calc(100% - 28px)" : "4px" }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
+                ) : (
+                  <div className="absolute top-1 h-6 w-6 rounded-full bg-white shadow-md" style={{ left: soundEnabled ? "calc(100% - 28px)" : "4px" }} />
+                )}
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+              <div className="flex items-center gap-3">
+                {animationsEnabled ? <Zap className="h-5 w-5 text-foreground" /> : <ZapOff className="h-5 w-5 text-muted-foreground" />}
+                <div>
+                  <div className="font-medium text-card-foreground">{t("animations") as string}</div>
+                  <div className="text-sm text-muted-foreground">{animationsEnabled ? t("animations_on_label") as string : t("animations_off_label") as string}</div>
+                </div>
+              </div>
+              <button onClick={toggleAnimations} className={`relative h-8 w-14 rounded-full transition-colors ${animationsEnabled ? "bg-primary" : "bg-muted"}`}>
+                {animationsEnabled ? (
+                  <motion.div className="absolute top-1 h-6 w-6 rounded-full bg-white shadow-md" animate={{ left: animationsEnabled ? "calc(100% - 28px)" : "4px" }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
+                ) : (
+                  <div className="absolute top-1 h-6 w-6 rounded-full bg-white shadow-md" style={{ left: animationsEnabled ? "calc(100% - 28px)" : "4px" }} />
+                )}
+              </button>
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="notifications" className="border-t border-border/60">
+        <AccordionTrigger className="px-2 py-3 hover:no-underline">
+          <div className="flex items-center gap-3">
+            <Bell className="h-5 w-5" />
+            <div>
+              <h2 className="text-lg font-semibold text-card-foreground">{t("notifications") as string}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{t("notif_examples") as string}</p>
+            </div>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="px-2 pb-2">
+          <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+            <div>
+              <div className="font-medium text-card-foreground">{t("notifications") as string}</div>
+              <div className="text-sm text-muted-foreground">{t("notif_toggle_desc") as string}</div>
+            </div>
+            <button onClick={() => setNotifications(!notifications)} className={`relative h-8 w-14 rounded-full transition-colors ${notifications ? "bg-secondary" : "bg-muted"}`}>
+              {animationsEnabled ? (
+                <motion.div className="absolute top-1 h-6 w-6 rounded-full bg-white shadow-md" animate={{ left: notifications ? "calc(100% - 28px)" : "4px" }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
+              ) : (
+                <div className="absolute top-1 h-6 w-6 rounded-full bg-white shadow-md" style={{ left: notifications ? "calc(100% - 28px)" : "4px" }} />
+              )}
+            </button>
+          </div>
+
+          {notifications && (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm text-muted-foreground">{t("notif_examples") as string}</p>
+              {notificationExamples.map((example: string, i: number) => (
+                <div key={i} className="rounded-2xl bg-secondary/10 p-4 text-sm italic text-foreground/80">
+                  "{example}"
+                </div>
+              ))}
+            </div>
+          )}
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="account" className="border-t border-border/60">
+        <AccordionTrigger className="px-2 py-3 hover:no-underline">
+          <div>
+            <h2 className="text-lg font-semibold text-card-foreground">{t("account_integrations") as string}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{t("account_integrations_desc") as string}</p>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="px-2 pb-2">
+          <div className="space-y-2">
+            <button onClick={() => navigate("/calendar-sync")} className="w-full rounded-2xl border border-border/60 bg-background/70 p-4 text-left transition-colors hover:bg-muted">
+              <div className="font-medium text-card-foreground">{t("gcal") as string}</div>
+              <div className="text-sm text-muted-foreground">{t("gcal_desc") as string}</div>
+            </button>
+            <button className="w-full rounded-2xl border border-border/60 bg-background/70 p-4 text-left transition-colors hover:bg-muted">
+              <div className="font-medium text-card-foreground">{t("manage_sub") as string}</div>
+              <div className="text-sm text-muted-foreground">{t("manage_sub_desc") as string}</div>
+            </button>
+            <button className="w-full rounded-2xl border border-border/60 bg-background/70 p-4 text-left transition-colors hover:bg-muted">
+              <div className="font-medium text-card-foreground">{t("export_data") as string}</div>
+              <div className="text-sm text-muted-foreground">{t("export_data_desc") as string}</div>
+            </button>
+            <button onClick={() => navigate("/about")} className="w-full rounded-2xl border border-border/60 bg-background/70 p-4 text-left transition-colors hover:bg-muted">
+              <div className="font-medium text-card-foreground">{t("about") as string}</div>
+              <div className="text-sm text-muted-foreground">{t("version") as string}</div>
+            </button>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="support" className="border-t border-border/60">
+        <AccordionTrigger className="px-2 py-3 hover:no-underline">
+          <div>
+            <h2 className="text-lg font-semibold text-card-foreground">{t("support") as string}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{t("support_desc") as string}</p>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="px-2 pb-2">
+          <div className="space-y-2">
+            <button className="w-full rounded-2xl border border-border/60 bg-background/70 p-4 text-left transition-colors hover:bg-muted">
+              <div className="font-medium text-card-foreground">{t("help_center") as string}</div>
+            </button>
+            <button className="w-full rounded-2xl border border-border/60 bg-background/70 p-4 text-left transition-colors hover:bg-muted">
+              <div className="font-medium text-card-foreground">{t("contact_us") as string}</div>
+            </button>
+            <button className="w-full rounded-2xl border border-border/60 bg-background/70 p-4 text-left transition-colors hover:bg-muted">
+              <div className="font-medium text-card-foreground">{t("privacy") as string}</div>
+            </button>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="language" className="border-t border-border/60">
+        <AccordionTrigger className="px-2 py-3 hover:no-underline">
+          <div className="flex items-center gap-3">
+            <Globe className="h-5 w-5" />
+            <div>
+              <h2 className="text-lg font-semibold text-card-foreground">{t("language") as string}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{t("language_desc") as string}</p>
+            </div>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="px-2 pb-2">
+          <div className="grid grid-cols-3 gap-3">
+            {LANGS.map(({ code, label, flag }) => (
+              <button
+                key={code}
+                onClick={() => setLang(code)}
+                className={`flex flex-col items-center gap-1 rounded-2xl border-2 p-3 transition-all ${
+                  lang === code ? "border-primary bg-primary/10" : "border-transparent bg-muted hover:bg-muted/80"
+                }`}
+              >
+                <span className="text-2xl">{flag}</span>
+                <span className={`text-xs font-medium ${lang === code ? "text-primary" : "text-muted-foreground"}`}>{label}</span>
+              </button>
+            ))}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
+}
+
+function CustomColors({ t, customColors, setCustomColor }: any) {
+  return (
+    <>
+      <h3 className="text-sm font-semibold text-card-foreground">{t("custom_colors") as string}</h3>
+      <div className="flex items-center justify-between">
+        <label htmlFor="primary-color" className="text-sm text-muted-foreground">{t("primary_color") as string}</label>
+        <input id="primary-color" type="color" value={customColors['--primary']} onChange={(e) => setCustomColor('--primary', e.target.value)} className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-card p-1"/>
+      </div>
+      <div className="flex items-center justify-between">
+        <label htmlFor="background-color" className="text-sm text-muted-foreground">{t("background_color") as string}</label>
+        <input id="background-color" type="color" value={customColors['--background']} onChange={(e) => setCustomColor('--background', e.target.value)} className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-card p-1"/>
+      </div>
+      <div className="flex items-center justify-between">
+        <label htmlFor="text-color" className="text-sm text-muted-foreground">{t("text_color") as string}</label>
+        <input id="text-color" type="color" value={customColors['--foreground']} onChange={(e) => setCustomColor('--foreground', e.target.value)} className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-card p-1"/>
+      </div>
+    </>
+  );
+}
+
 export function Settings() {
   const navigate = useNavigate();
   const { t, lang, setLang } = useLanguage();
@@ -50,230 +299,40 @@ export function Settings() {
 
       <div className="max-w-3xl mx-auto px-6 py-6 space-y-4">
         {/* Bloom Premium Banner */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="group relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-[#E8920A] to-[#F5C030] p-5 text-white shadow-2xl shadow-orange-500/10 cursor-pointer"
-          onClick={() => navigate("/upgrade")}
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
-        >
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-2">
-              <Crown className="w-5 h-5" />
-              <span className="text-sm font-semibold">{t("bloom_premium") as string}</span>
-            </div>
-            <p className="text-sm text-white/90 mb-3">
-              {t("premium_desc") as string}
-            </p>
-            <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full text-sm font-medium backdrop-blur-md">
-              <Sparkles className="w-4 h-4" />
-              <span>{t("discover") as string}</span>
-            </div>
+        {animationsEnabled ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="group relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-[#E8920A] to-[#F5C030] p-5 text-white shadow-2xl shadow-orange-500/10 cursor-pointer"
+            onClick={() => navigate("/upgrade")}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+          >
+            <PremiumBannerContent t={t} />
+          </motion.div>
+        ) : (
+          <div
+            className="group relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-[#E8920A] to-[#F5C030] p-5 text-white shadow-2xl shadow-orange-500/10 cursor-pointer"
+            onClick={() => navigate("/upgrade")}
+          >
+            <PremiumBannerContent t={t} />
           </div>
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-        </motion.div>
+        )}
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="rounded-[28px] border border-border/60 bg-card/90 p-4 shadow-lg backdrop-blur-sm"
-        >
-          <Accordion type="multiple" defaultValue={["appearance"]} className="w-full">
-            <AccordionItem value="appearance" className="border-none">
-              <AccordionTrigger className="px-2 py-3 hover:no-underline">
-                <div className="text-left">
-                  <h2 className="text-lg font-semibold text-card-foreground">{t("appearance") as string}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">{t("appearance_desc") as string}</p>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-2 pb-2">
-                <div className="grid grid-cols-3 gap-3 md:grid-cols-6">
-                  {themes.map((themeKey) => (
-                    <button
-                      key={themeKey}
-                      onClick={() => setTheme(themeKey)}
-                      className={`flex flex-col items-center gap-2 rounded-[20px] border-2 p-3 text-center transition-all ${
-                        theme === themeKey
-                          ? "border-primary bg-primary/10 shadow-sm"
-                          : "border-border/40 bg-muted/30 hover:border-primary/40 hover:bg-muted/50"
-                      }`}
-                    >
-                      <span className="text-xl">{THEME_DETAILS[themeKey].icon}</span>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider ${theme === themeKey ? "text-primary" : "text-muted-foreground"}`}>
-                        {t(THEME_DETAILS[themeKey].labelKey as any) as string}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                {theme === "custom" && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    className="mt-4 space-y-3 rounded-2xl border border-border/60 bg-background/50 p-4"
-                  >
-                    <h3 className="text-sm font-semibold text-card-foreground">{t("custom_colors") as string}</h3>
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="primary-color" className="text-sm text-muted-foreground">{t("primary_color") as string}</label>
-                      <input id="primary-color" type="color" value={customColors['--primary']} onChange={(e) => setCustomColor('--primary', e.target.value)} className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-card p-1"/>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="background-color" className="text-sm text-muted-foreground">{t("background_color") as string}</label>
-                      <input id="background-color" type="color" value={customColors['--background']} onChange={(e) => setCustomColor('--background', e.target.value)} className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-card p-1"/>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="text-color" className="text-sm text-muted-foreground">{t("text_color") as string}</label>
-                      <input id="text-color" type="color" value={customColors['--foreground']} onChange={(e) => setCustomColor('--foreground', e.target.value)} className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-card p-1"/>
-                    </div>
-                  </motion.div>
-                )}
-
-                <div className="mt-4 space-y-3">
-                  <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      {soundEnabled ? <Volume2 className="h-5 w-5 text-foreground" /> : <VolumeX className="h-5 w-5 text-muted-foreground" />}
-                      <div>
-                        <div className="font-medium text-card-foreground">{t("sound_effects") as string}</div>
-                        <div className="text-sm text-muted-foreground">{soundEnabled ? (t("sound_effects_on_label") as string) : (t("sound_effects_off_label") as string)}</div>
-                      </div>
-                    </div>
-                    <button onClick={toggleSound} className={`relative h-8 w-14 rounded-full transition-colors ${soundEnabled ? "bg-primary" : "bg-muted"}`}>
-                      <motion.div className="absolute top-1 h-6 w-6 rounded-full bg-white shadow-md" animate={{ left: soundEnabled ? "calc(100% - 28px)" : "4px" }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      {animationsEnabled ? <Zap className="h-5 w-5 text-foreground" /> : <ZapOff className="h-5 w-5 text-muted-foreground" />}
-                      <div>
-                        <div className="font-medium text-card-foreground">{t("animations") as string}</div>
-                        <div className="text-sm text-muted-foreground">{animationsEnabled ? t("animations_on_label") as string : t("animations_off_label") as string}</div>
-                      </div>
-                    </div>
-                    <button onClick={toggleAnimations} className={`relative h-8 w-14 rounded-full transition-colors ${animationsEnabled ? "bg-primary" : "bg-muted"}`}>
-                      <motion.div className="absolute top-1 h-6 w-6 rounded-full bg-white shadow-md" animate={{ left: animationsEnabled ? "calc(100% - 28px)" : "4px" }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
-                    </button>
-                  </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="notifications" className="border-t border-border/60">
-              <AccordionTrigger className="px-2 py-3 hover:no-underline">
-                <div className="flex items-center gap-3">
-                  <Bell className="h-5 w-5" />
-                  <div>
-                    <h2 className="text-lg font-semibold text-card-foreground">{t("notifications") as string}</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">{t("notif_examples") as string}</p>
-                  </div>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-2 pb-2">
-                <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
-                  <div>
-                    <div className="font-medium text-card-foreground">{t("notifications") as string}</div>
-                    <div className="text-sm text-muted-foreground">{t("notif_toggle_desc") as string}</div>
-                  </div>
-                  <button onClick={() => setNotifications(!notifications)} className={`relative h-8 w-14 rounded-full transition-colors ${notifications ? "bg-secondary" : "bg-muted"}`}>
-                    <motion.div className="absolute top-1 h-6 w-6 rounded-full bg-white shadow-md" animate={{ left: notifications ? "calc(100% - 28px)" : "4px" }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
-                  </button>
-                </div>
-
-                {notifications && (
-                  <div className="mt-4 space-y-3">
-                    <p className="text-sm text-muted-foreground">{t("notif_examples") as string}</p>
-                    {notificationExamples.map((example, i) => (
-                      <div key={i} className="rounded-2xl bg-secondary/10 p-4 text-sm italic text-foreground/80">
-                        "{example}"
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="account" className="border-t border-border/60">
-              <AccordionTrigger className="px-2 py-3 hover:no-underline">
-                <div>
-                  <h2 className="text-lg font-semibold text-card-foreground">{t("account_integrations") as string}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">{t("account_integrations_desc") as string}</p>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-2 pb-2">
-                <div className="space-y-2">
-                  <button onClick={() => navigate("/calendar-sync")} className="w-full rounded-2xl border border-border/60 bg-background/70 p-4 text-left transition-colors hover:bg-muted">
-                    <div className="font-medium text-card-foreground">{t("gcal") as string}</div>
-                    <div className="text-sm text-muted-foreground">{t("gcal_desc") as string}</div>
-                  </button>
-                  <button className="w-full rounded-2xl border border-border/60 bg-background/70 p-4 text-left transition-colors hover:bg-muted">
-                    <div className="font-medium text-card-foreground">{t("manage_sub") as string}</div>
-                    <div className="text-sm text-muted-foreground">{t("manage_sub_desc") as string}</div>
-                  </button>
-                  <button className="w-full rounded-2xl border border-border/60 bg-background/70 p-4 text-left transition-colors hover:bg-muted">
-                    <div className="font-medium text-card-foreground">{t("export_data") as string}</div>
-                    <div className="text-sm text-muted-foreground">{t("export_data_desc") as string}</div>
-                  </button>
-                  <button onClick={() => navigate("/about")} className="w-full rounded-2xl border border-border/60 bg-background/70 p-4 text-left transition-colors hover:bg-muted">
-                    <div className="font-medium text-card-foreground">{t("about") as string}</div>
-                    <div className="text-sm text-muted-foreground">{t("version") as string}</div>
-                  </button>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="support" className="border-t border-border/60">
-              <AccordionTrigger className="px-2 py-3 hover:no-underline">
-                <div>
-                  <h2 className="text-lg font-semibold text-card-foreground">{t("support") as string}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">{t("support_desc") as string}</p>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-2 pb-2">
-                <div className="space-y-2">
-                  <button className="w-full rounded-2xl border border-border/60 bg-background/70 p-4 text-left transition-colors hover:bg-muted">
-                    <div className="font-medium text-card-foreground">{t("help_center") as string}</div>
-                  </button>
-                  <button className="w-full rounded-2xl border border-border/60 bg-background/70 p-4 text-left transition-colors hover:bg-muted">
-                    <div className="font-medium text-card-foreground">{t("contact_us") as string}</div>
-                  </button>
-                  <button className="w-full rounded-2xl border border-border/60 bg-background/70 p-4 text-left transition-colors hover:bg-muted">
-                    <div className="font-medium text-card-foreground">{t("privacy") as string}</div>
-                  </button>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="language" className="border-t border-border/60">
-              <AccordionTrigger className="px-2 py-3 hover:no-underline">
-                <div className="flex items-center gap-3">
-                  <Globe className="h-5 w-5" />
-                  <div>
-                    <h2 className="text-lg font-semibold text-card-foreground">{t("language") as string}</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">{t("language_desc") as string}</p>
-                  </div>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-2 pb-2">
-                <div className="grid grid-cols-3 gap-3">
-                  {LANGS.map(({ code, label, flag }) => (
-                    <button
-                      key={code}
-                      onClick={() => setLang(code)}
-                      className={`flex flex-col items-center gap-1 rounded-2xl border-2 p-3 transition-all ${
-                        lang === code ? "border-primary bg-primary/10" : "border-transparent bg-muted hover:bg-muted/80"
-                      }`}
-                    >
-                      <span className="text-2xl">{flag}</span>
-                      <span className={`text-xs font-medium ${lang === code ? "text-primary" : "text-muted-foreground"}`}>{label}</span>
-                    </button>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </motion.div>
+        {animationsEnabled ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="rounded-[28px] border border-border/60 bg-card/90 p-4 shadow-lg backdrop-blur-sm"
+          >
+            <SettingsAccordion t={t} setTheme={setTheme} theme={theme} customColors={customColors} setCustomColor={setCustomColor} soundEnabled={soundEnabled} toggleSound={toggleSound} animationsEnabled={animationsEnabled} toggleAnimations={toggleAnimations} notifications={notifications} setNotifications={setNotifications} notificationExamples={notificationExamples} navigate={navigate} lang={lang} setLang={setLang} />
+          </motion.div>
+        ) : (
+          <div className="rounded-[28px] border border-border/60 bg-card/90 p-4 shadow-lg backdrop-blur-sm">
+            <SettingsAccordion t={t} setTheme={setTheme} theme={theme} customColors={customColors} setCustomColor={setCustomColor} soundEnabled={soundEnabled} toggleSound={toggleSound} animationsEnabled={animationsEnabled} toggleAnimations={toggleAnimations} notifications={notifications} setNotifications={setNotifications} notificationExamples={notificationExamples} navigate={navigate} lang={lang} setLang={setLang} />
+          </div>
+        )}
 
         <div className="py-4 text-center text-sm text-muted-foreground">
           {t("footer") as string}

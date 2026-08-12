@@ -6,9 +6,10 @@ import { Check, X, Bell } from "lucide-react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import type { Habit } from "../types/habit";
 import { SunnyMascot } from "../components/sunny-mascot";
-import { queueHabitCheckIn, getLogicalDayFromUtc } from "../utils/offline-sync";
+import { queueHabitCheckIn, getLogicalDayFromUtc, queueHabitUpsert } from "../utils/offline-sync";
 import { playSound } from "../utils/audio";
 import { useAudio } from "../contexts/AudioContext";
+import { useAnimation } from "../contexts/AnimationContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { Tokenomics } from "../utils/tokenomics";
@@ -16,6 +17,50 @@ import { MilestoneModal } from "../components/milestone-modal";
 import { filterNotificationSpam } from "../utils/notifications";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
+
+function ValidationContent({ habit, handleIgnore, handleValidate, t }: any) {
+  return (
+    <>
+      <div className="mb-8 flex justify-center">
+        <SunnyMascot mood="blooming" size={160} />
+      </div>
+
+      <h1 className="text-3xl font-black text-[#1C1917] mb-2">{t("its_time") as string}</h1>
+      <p className="text-lg font-medium text-[#1C1917]/60 mb-8 leading-relaxed">
+        {t("did_you_realize") as string} <br/>
+        <span className="text-[#1C1917] font-extrabold text-xl">"{habit.name}"</span> ?
+      </p>
+
+      <div className="grid grid-cols-2 gap-4">
+        <button
+          onClick={handleIgnore}
+          className="flex flex-col items-center justify-center gap-3 p-6 rounded-[32px] bg-gray-50 border border-gray-100 active:scale-95 transition-all group"
+        >
+          <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-sm group-active:bg-gray-100 transition-colors">
+            <X className="w-7 h-7 text-gray-400" />
+          </div>
+          <span className="font-bold text-gray-400">{t("ignore") as string}</span>
+        </button>
+
+        <button
+          onClick={handleValidate}
+          className={`flex flex-col items-center justify-center gap-3 p-6 rounded-[32px] border active:scale-95 transition-all group ${
+            habit.mode === 'build' ? 'bg-green-50 border-green-100' : 'bg-purple-50 border-purple-100'
+          }`}
+        >
+          <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+            habit.mode === 'build' ? 'bg-green-500' : 'bg-purple-500'
+          }`}>
+            <Check className="w-7 h-7 text-white" />
+          </div>
+          <span className={`font-bold ${
+            habit.mode === 'build' ? 'text-green-600' : 'text-purple-600'
+          }`}>{t("validate") as string}</span>
+        </button>
+      </div>
+    </>
+  );
+}
 
 /**
  * Écran d'Action de Validation : S'affiche au clic d'une notification.
@@ -25,6 +70,7 @@ export function HabitValidationAction() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { soundEnabled } = useAudio();
+  const { animationsEnabled } = useAnimation();
   const { t } = useLanguage();
   const { session } = useAuth();
   const userPlan = session.user?.plan || 'seedling';
@@ -47,6 +93,9 @@ export function HabitValidationAction() {
     const logicalDate = getLogicalDayFromUtc(nowUtc);
 
     try {
+      // Sécurité : On s'assure que l'habitude est présente dans SQLite avant de valider
+      await queueHabitUpsert(habit);
+
       // 1. Enregistrement en base locale SQLite (Offline First - Spec 7.4)
       const result = await queueHabitCheckIn({
         habitId: habit.id,
@@ -54,8 +103,6 @@ export function HabitValidationAction() {
       });
 
       // 2. Mise à jour de l'état local React (Propagated to LocalStorage via hook)
-      let habitDoneToday = false;
-
       setHabits((prev) => {
         return prev.map((h) => {
           if (h.id !== habit.id) return h;
@@ -82,7 +129,7 @@ export function HabitValidationAction() {
             history: nextHistory,
           };
 
-          habitDoneToday = result.currentCount >= (h.repetitionsPerDay || 1);
+          const habitDoneToday = result.currentCount >= (h.repetitionsPerDay || 1);
 
           // 3. Suppression immédiate de la notification si l'objectif est atteint (Anti-Spam Spec 7.3)
           void filterNotificationSpam(updated, habitDoneToday);
@@ -140,49 +187,19 @@ export function HabitValidationAction() {
   return (
     <>
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center">
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="w-full max-w-sm"
-        >
-          <div className="mb-8 flex justify-center">
-            <SunnyMascot mood="blooming" size={160} />
+        {animationsEnabled ? (
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="w-full max-w-sm"
+          >
+            <ValidationContent habit={habit} handleIgnore={handleIgnore} handleValidate={handleValidate} t={t} />
+          </motion.div>
+        ) : (
+          <div className="w-full max-w-sm">
+            <ValidationContent habit={habit} handleIgnore={handleIgnore} handleValidate={handleValidate} t={t} />
           </div>
-
-          <h1 className="text-3xl font-black text-[#1C1917] mb-2">{t("its_time") as string}</h1>
-          <p className="text-lg font-medium text-[#1C1917]/60 mb-8 leading-relaxed">
-            {t("did_you_realize") as string} <br/>
-            <span className="text-[#1C1917] font-extrabold text-xl">"{habit.name}"</span> ?
-          </p>
-
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={handleIgnore}
-              className="flex flex-col items-center justify-center gap-3 p-6 rounded-[32px] bg-gray-50 border border-gray-100 active:scale-95 transition-all group"
-            >
-              <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-sm group-active:bg-gray-100 transition-colors">
-                <X className="w-7 h-7 text-gray-400" />
-              </div>
-              <span className="font-bold text-gray-400">{t("ignore") as string}</span>
-            </button>
-
-            <button
-              onClick={handleValidate}
-              className={`flex flex-col items-center justify-center gap-3 p-6 rounded-[32px] border active:scale-95 transition-all group ${
-                habit.mode === 'build' ? 'bg-green-50 border-green-100' : 'bg-purple-50 border-purple-100'
-              }`}
-            >
-              <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-                habit.mode === 'build' ? 'bg-green-500' : 'bg-purple-500'
-              }`}>
-                <Check className="w-7 h-7 text-white" />
-              </div>
-              <span className={`font-bold ${
-                habit.mode === 'build' ? 'text-green-600' : 'text-purple-600'
-              }`}>{t("validate") as string}</span>
-            </button>
-          </div>
-        </motion.div>
+        )}
       </div>
 
       {/* Modale de jalon (Milestone) en cas de succès majeur */}

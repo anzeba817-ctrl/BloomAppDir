@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { useAnimation } from "../contexts/AnimationContext";
 
 // Nouvelles images d'état
 import BloomingImg from "../../imports/State1_Blooming.png";
@@ -34,6 +35,7 @@ export function SunnyMascot({
   size = 120,
   className = ""
 }: SunnyMascotProps) {
+  const { animationsEnabled } = useAnimation();
 
   // Map moods to images according to specs
   const getImageForMood = () => {
@@ -65,10 +67,22 @@ export function SunnyMascot({
   const styles = getMoodStyles();
   const imageSrc = getImageForMood();
 
+  const renderImage = () => (
+    <ImageWithFallback
+      src={imageSrc}
+      alt={`Sunny en état ${mood}`}
+      style={{
+        width: "100%",
+        height: "100%",
+        objectFit: "contain",
+      }}
+    />
+  );
+
   return (
     <div className={`relative ${className}`} style={{ width: size, height: size }}>
       {/* Shield aura */}
-      {mood === "shielded" && (
+      {mood === "shielded" && animationsEnabled && (
         <motion.div
           className="absolute inset-0 rounded-full"
           style={{
@@ -89,7 +103,7 @@ export function SunnyMascot({
       )}
 
       {/* Hearts for Overjoyed */}
-      {mood === "overjoyed" && (
+      {mood === "overjoyed" && animationsEnabled && (
         <>
           {[...Array(5)].map((_, i) => (
             <motion.div
@@ -119,30 +133,37 @@ export function SunnyMascot({
       )}
 
       {/* Main Sunny Image */}
-      <motion.div
-        style={{
-          width: size,
-          height: size,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-        animate={{
-          scale: styles.scale,
-          y: styles.y,
-        }}
-        transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
-      >
-        <ImageWithFallback
-          src={imageSrc}
-          alt={`Sunny en état ${mood}`}
+      {animationsEnabled ? (
+        <motion.div
           style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
+            width: size,
+            height: size,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
-        />
-      </motion.div>
+          animate={{
+            scale: styles.scale,
+            y: styles.y,
+          }}
+          transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
+        >
+          {renderImage()}
+        </motion.div>
+      ) : (
+        <div
+          style={{
+            width: size,
+            height: size,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transform: `scale(${styles.scale}) translateY(${styles.y}px)`
+          }}
+        >
+          {renderImage()}
+        </div>
+      )}
     </div>
   );
 }

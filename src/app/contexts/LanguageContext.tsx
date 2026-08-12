@@ -187,6 +187,8 @@ export const translations = {
     ignore: "Ignorer",
     validate: "Valider",
     habit_validated_success: "Super ! {{name}} validé.",
+    error_validation_failed: "Échec de la validation. Vérifie ta connexion ou réessaye.",
+    error_db_init: "Erreur d'initialisation de la base de données.",
 
     // Auth & Generic Errors
     error_all_fields_required: "Veuillez remplir tous les champs.",
@@ -657,6 +659,8 @@ export const translations = {
     ignore: "Ignore",
     validate: "Validate",
     habit_validated_success: "Great! {{name}} validated.",
+    error_validation_failed: "Validation failed. Check your connection or try again.",
+    error_db_init: "Database initialization error.",
 
     // Auth & Generic Errors
     error_all_fields_required: "Please fill in all fields.",
@@ -1127,6 +1131,8 @@ export const translations = {
     ignore: "Ignorar",
     validate: "Validar",
     habit_validated_success: "¡Genial! {{name}} validado.",
+    error_validation_failed: "Error de validación. Comprueba tu conexión o inténtalo de nuevo.",
+    error_db_init: "Error de inicialización de la base de datos.",
 
     // Auth & Generic Errors
     error_all_fields_required: "Por favor, complete todos los campos.",

@@ -71,7 +71,14 @@ export function getLogicalDayFromUtc(timestampUtc: string, cutoffHour = NIGHT_OW
 async function getSqlJs(): Promise<SqlJsStatic> {
   if (!sqlJsInitPromise) {
     sqlJsInitPromise = initSqlJs({
-      locateFile: (file: string) => `https://sql.js.org/dist/${file}`,
+      locateFile: (file: string) => {
+        const url = `https://sql.js.org/dist/${file}`;
+        console.log("Bloom: Loading SQLite WASM from", url);
+        return url;
+      },
+    }).catch(err => {
+      console.error("Bloom: Failed to load sql.js WASM", err);
+      throw err;
     });
   }
   return sqlJsInitPromise;
@@ -85,9 +92,14 @@ async function getDb(): Promise<Database> {
   if (typeof window === "undefined") throw new Error("offline-sync is browser only");
   if (sqliteDb) return sqliteDb;
 
-  const SQL = await getSqlJs();
-  const raw = window.localStorage.getItem(SQLITE_STORAGE_KEY);
-  sqliteDb = raw ? new SQL.Database(fromBase64(raw)) : new SQL.Database();
+  try {
+    const SQL = await getSqlJs();
+    const raw = window.localStorage.getItem(SQLITE_STORAGE_KEY);
+    sqliteDb = raw ? new SQL.Database(fromBase64(raw)) : new SQL.Database();
+  } catch (err) {
+    console.error("Bloom: Failed to initialize SQLite database", err);
+    throw err;
+  }
 
   sqliteDb.run("PRAGMA foreign_keys = ON;");
 
@@ -178,12 +190,13 @@ export async function queueHabitCheckIn(payload: {
 
   const validationId = `${payload.habitId}:${logicalDate}`;
 
-  // Récupération de l'état actuel pour incrémenter
-  const existing = db.exec(`SELECT completed_count FROM validations WHERE id = ?`, [validationId]);
+  // Récupération de l'état actuel pour incrémenter (Correction Spec 7.4 : SQL paramétré)
   let currentCount = 0;
-
-  if (existing.length > 0 && existing[0].values.length > 0) {
-    currentCount = Number(existing[0].values[0][0]) + 1;
+  const stmt = db.prepare(`SELECT completed_count FROM validations WHERE id = ?`);
+  stmt.bind([validationId]);
+  if (stmt.step()) {
+    const row = stmt.get();
+    currentCount = Number(row[0]) + 1;
     db.run(
       `UPDATE validations SET completed_count = ?, timestamp_utc = ?, note_journal = ?, humeur = ? WHERE id = ?`,
       [currentCount, timestampUtc, payload.note ?? null, payload.mood ?? null, validationId]
@@ -196,6 +209,7 @@ export async function queueHabitCheckIn(payload: {
       [validationId, payload.habitId, timestampUtc, timezoneOffset, logicalDate, payload.note ?? null, payload.mood ?? null, currentCount]
     );
   }
+  stmt.free();
 
   await persistDb();
 
@@ -281,10 +295,17 @@ async function putOp(op: PendingOp): Promise<void> {
  */
 async function getHabitStreakState(habitId: string): Promise<{ streak: number; lastCheckIn: string | null }> {
   const db = await getDb();
-  const result = db.exec(`SELECT date_logique FROM validations WHERE habitude_id = ? ORDER BY date_logique DESC;`, [habitId]);
-  if (result.length === 0) return { streak: 0, lastCheckIn: null };
+  const stmt = db.prepare(`SELECT date_logique FROM validations WHERE habitude_id = ? ORDER BY date_logique DESC;`);
+  stmt.bind([habitId]);
 
-  const dates = result[0].values.map((row) => String(row[0]));
+  const dates: string[] = [];
+  while (stmt.step()) {
+    dates.push(String(stmt.get()[0]));
+  }
+  stmt.free();
+
+  if (dates.length === 0) return { streak: 0, lastCheckIn: null };
+
   return { streak: computeStreakFromLogicalDates(dates), lastCheckIn: dates[0] };
 }
 
@@ -331,7 +352,26 @@ export function startSyncOnReconnect(): () => void {
 
 export async function queueHabitUpsert(habit: Habit): Promise<void> {
   const db = await getDb();
-  db.run(`INSERT INTO habitudes (id, titre, type, cadence, date_creation) VALUES (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET titre=excluded.titre;`, [habit.id, habit.name, habit.mode, habit.frequency || "daily", habit.startDate || new Date().toISOString()]);
+  db.run(
+    `INSERT INTO habitudes (id, titre, type, cadence, date_creation)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET
+       titre=excluded.titre,
+       type=excluded.type,
+       cadence=excluded.cadence`,
+    [
+      habit.id,
+      habit.name,
+      habit.mode,
+      habit.frequency || "daily",
+      habit.startDate || new Date().toISOString(),
+    ]
+  );
   await persistDb();
-  await putOp({ id: crypto.randomUUID(), type: "habit-upsert-v2", payload: habit, createdAtUtc: new Date().toISOString() });
+  await putOp({
+    id: crypto.randomUUID(),
+    type: "habit-upsert-v2",
+    payload: habit,
+    createdAtUtc: new Date().toISOString(),
+  });
 }
