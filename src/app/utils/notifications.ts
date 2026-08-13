@@ -36,62 +36,70 @@ export async function scheduleHabitReminder(habit: Habit) {
   // On nettoie d'abord les anciens rappels pour cette habitude
   await cancelHabitReminder(habit.id);
 
-  if (!habit.reminderTime) return;
+  const timesToSchedule = habit.reminderTimes && habit.reminderTimes.length > 0
+    ? habit.reminderTimes
+    : (habit.reminderTime ? [habit.reminderTime] : []);
 
-  const [hours, minutes] = habit.reminderTime.split(":").map(Number);
+  if (timesToSchedule.length === 0) return;
+
   const notifications: any[] = [];
-
-  // Configuration de base de la notification (Spec 7.3)
   const buildTitle = getTranslation("notif_build_title" as any) || "C'est l'heure d'ancrer ! 🌻";
   const quitTitle = getTranslation("notif_quit_title" as any) || "Reste fort(e) ! 🕊️";
   const bodyPrefix = getTranslation("notif_body_prefix" as any) || "C'est le moment pour : ";
 
-  const baseNotification = {
-    title: habit.mode === 'build' ? buildTitle : quitTitle,
-    body: habit.customReminder || `${bodyPrefix}${habit.name}`,
-    sound: "sounds/success-chime.mp3",
-    extra: {
-      habitId: habit.id
-    }
-  };
+  timesToSchedule.forEach((time, index) => {
+    const [hours, minutes] = time.split(":").map(Number);
 
-  // Planification Quotidienne
-  if (habit.frequency === "daily") {
-    notifications.push({
-      ...baseNotification,
-      id: stringToId(habit.id),
-      schedule: {
-        on: { hour: hours, minute: minutes },
-        repeats: true,
-        allowWhileIdle: true
+    const baseNotification = {
+      title: habit.mode === 'build' ? buildTitle : quitTitle,
+      body: habit.customReminder || `${bodyPrefix}${habit.name}`,
+      sound: "sounds/success-chime.mp3",
+      extra: {
+        habitId: habit.id,
+        reminderIndex: index
       }
-    });
-  }
-  // Planification Hebdomadaire / Personnalisée
-  else if (habit.selectedDays && habit.selectedDays.length > 0) {
-    habit.selectedDays.forEach(day => {
-      // Mapping Capacitor: Dimanche=1, Lundi=2...
-      const capacitorWeekday = day === 0 ? 1 : day + 1;
+    };
 
+    // Planification Quotidienne
+    if (habit.frequency === "daily") {
       notifications.push({
         ...baseNotification,
-        id: stringToId(`${habit.id}-${day}`),
+        id: stringToId(`${habit.id}-${index}`),
         schedule: {
-          on: {
-            weekday: capacitorWeekday,
-            hour: hours,
-            minute: minutes
-          },
+          on: { hour: hours, minute: minutes },
           repeats: true,
           allowWhileIdle: true
         }
       });
+    }
+    // Planification Hebdomadaire / Personnalisée
+    else if (habit.selectedDays && habit.selectedDays.length > 0) {
+      habit.selectedDays.forEach(day => {
+        // Mapping Capacitor: Dimanche=1, Lundi=2...
+        const capacitorWeekday = day === 0 ? 1 : day + 1;
+
+        notifications.push({
+          ...baseNotification,
+          id: stringToId(`${habit.id}-${day}-${index}`),
+          schedule: {
+            on: {
+              weekday: capacitorWeekday,
+              hour: hours,
+              minute: minutes
+            },
+            repeats: true,
+            allowWhileIdle: true
+          }
+        });
+      });
+    }
+  });
+
+  if (notifications.length > 0) {
+    await LocalNotifications.schedule({
+      notifications
     });
   }
-
-  await LocalNotifications.schedule({
-    notifications
-  });
 }
 
 /**
@@ -99,9 +107,14 @@ export async function scheduleHabitReminder(habit: Habit) {
  * Utilisé pour l'évitement du spam (Spec 7.3) quand une habitude est complétée.
  */
 export async function cancelHabitReminder(habitId: string) {
-  const ids = [stringToId(habitId)];
-  for (let i = 0; i <= 6; i++) {
-    ids.push(stringToId(`${habitId}-${i}`));
+  const ids = [];
+
+  // On génère une large plage d'IDs possibles (jusqu'à 10 répétitions par jour)
+  for (let index = 0; index < 10; index++) {
+    ids.push(stringToId(`${habitId}-${index}`));
+    for (let day = 0; day <= 6; day++) {
+      ids.push(stringToId(`${habitId}-${day}-${index}`));
+    }
   }
 
   await LocalNotifications.cancel({

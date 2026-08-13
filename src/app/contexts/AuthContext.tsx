@@ -30,6 +30,7 @@ interface AuthContextType {
   signup: (email: string, displayName: string) => void;
   logout: () => void;
   upgradePlan: (plan: UserPlan) => void;
+  updateUser: (data: Partial<User>) => void;
   isAuthenticated: boolean;
   isPremium: boolean;
 }
@@ -81,6 +82,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateUser = (data: Partial<User>) => {
+    if (session.user) {
+      setSession({
+        ...session,
+        user: { ...session.user, ...data }
+      });
+    }
+  };
+
   const logout = () => {
     setSession(INITIAL_SESSION);
   };
@@ -89,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isPremium = session.user?.plan === 'bloom' || session.user?.plan === 'forever';
 
   return (
-    <AuthContext.Provider value={{ session, login, signup, logout, upgradePlan, isAuthenticated, isPremium }}>
+    <AuthContext.Provider value={{ session, login, signup, logout, upgradePlan, updateUser, isAuthenticated, isPremium }}>
       {children}
     </AuthContext.Provider>
   );

@@ -130,6 +130,7 @@ export const translations = {
     edit_note: "Modifier ma note",
     write_first_thought: "Écrire ma première pensée",
     update_note: "Mettre à jour",
+    attach_files: "Joindre des médias",
 
     // Profile
     profile_title: "profil & historique",
@@ -354,6 +355,8 @@ export const translations = {
     onboarding_welcome_cta: "C'est parti ! →",
     onboarding_welcome_already_account: "J'ai déjà un compte ?",
     onboarding_welcome_signin: "Se connecter",
+    create_account: "Créer un compte",
+    password_requirements: "8+ caractères, 1 majuscule, 1 chiffre",
 
     onboarding_auth_title: "Préparons ton arrivée",
     onboarding_auth_subtitle: "Choisis comment tu souhaites continuer. Cela ne prend qu'un instant.",
@@ -602,6 +605,7 @@ export const translations = {
     edit_note: "Edit my note",
     write_first_thought: "Write my first thought",
     update_note: "Update",
+    attach_files: "Attach media",
 
     // Profile
     profile_title: "profile & history",
@@ -826,6 +830,8 @@ export const translations = {
     onboarding_welcome_cta: "Let's Bloom →",
     onboarding_welcome_already_account: "Already have an account?",
     onboarding_welcome_signin: "Sign in",
+    create_account: "Create an account",
+    password_requirements: "8+ chars, 1 uppercase, 1 number",
 
     onboarding_auth_title: "Let's get you set up",
     onboarding_auth_subtitle: "Choose how you’d like to continue. It only takes a moment.",
@@ -1074,6 +1080,7 @@ export const translations = {
     edit_note: "Editar mi nota",
     write_first_thought: "Escribir mi primer pensamiento",
     update_note: "Actualizar",
+    attach_files: "Adjuntar medios",
 
     // Profile
     profile_title: "perfil & historial",
@@ -1296,8 +1303,10 @@ export const translations = {
     onboarding_welcome_hi_sunny: "¡Hola, soy Sunny! 🌻",
     onboarding_welcome_subtext: "Estoy muy feliz de que estés aquí. Cultivemos algo bueno juntos, un pequeño hábito a la vez.",
     onboarding_welcome_cta: "¡Vamos! →",
-    onboarding_welcome_already_account: "¿Ya tienes una cuenta?",
+    onboarding_welcome_already_account: "¿Ya tienes una compte?",
     onboarding_welcome_signin: "Iniciar sesión",
+    create_account: "Crear una cuenta",
+    password_requirements: "8+ caract., 1 mayúscula, 1 número",
 
     onboarding_auth_title: "Preparemos tu llegada",
     onboarding_auth_subtitle: "Elige cómo deseas continuar. Solo toma un momento.",

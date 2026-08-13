@@ -21,6 +21,7 @@ export interface Habit {
   repetitionsPerDay: number;
   selectedDays?: number[];
   reminderTime?: string | null;
+  reminderTimes?: string[];
   customReminder?: string;
   durationMinutes?: number | null;
   effortLevel?: EffortLevel;

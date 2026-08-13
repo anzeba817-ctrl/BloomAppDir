@@ -3,13 +3,13 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 
-export const themes = ["light", "dark", "system", "forest", "ocean", "custom"] as const;
+export const themes = ["light", "dark", "system"] as const;
 export type Theme = (typeof themes)[number];
 
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  resolvedTheme: "light" | "dark" | "forest" | "ocean" | "custom";
+  resolvedTheme: "light" | "dark";
   customColors: Record<string, string>;
   setCustomColor: (variable: string, value: string) => void;
 }
@@ -28,25 +28,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   });
 
   const resolvedTheme = useMemo(() => {
-    if (theme !== "system") return theme;
+    if (theme !== "system") return theme as "light" | "dark";
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }, [theme]);
 
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove("light", "dark", "forest", "ocean", "custom");
+    root.classList.remove("light", "dark");
     root.classList.add(resolvedTheme);
-
-    if (resolvedTheme === "custom") {
-      for (const [variable, value] of Object.entries(customColors)) {
-        root.style.setProperty(variable, value);
-      }
-    } else {
-      for (const variable of Object.keys(customColors)) {
-        root.style.removeProperty(variable);
-      }
-    }
-  }, [resolvedTheme, customColors]);
+  }, [resolvedTheme]);
 
   const setCustomColor = (variable: string, value: string) => {
     setCustomColors((prev) => ({ ...prev, [variable]: value }));

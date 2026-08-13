@@ -1,5 +1,7 @@
 import { Habit } from "../types/habit";
 import initSqlJs, { Database, SqlJsStatic } from "sql.js";
+// @ts-ignore
+import sqlWasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 
 /**
  * GESTION DE LA PERSISTANCE LOCALE ET SYNCHRONISATION (OFFLINE-FIRST)
@@ -72,12 +74,17 @@ async function getSqlJs(): Promise<SqlJsStatic> {
   if (!sqlJsInitPromise) {
     sqlJsInitPromise = initSqlJs({
       locateFile: (file: string) => {
-        const url = `https://sql.js.org/dist/${file}`;
-        console.log("Bloom: Loading SQLite WASM from", url);
-        return url;
+        // Correction Spec 7.4 : On utilise le WASM inclus localement par Vite
+        if (file.endsWith(".wasm")) {
+          console.log("Bloom: Using local SQLite WASM from bundle");
+          return sqlWasmUrl;
+        }
+        return `https://sql.js.org/dist/${file}`;
       },
     }).catch(err => {
       console.error("Bloom: Failed to load sql.js WASM", err);
+      // Reset de la promesse pour permettre une nouvelle tentative au prochain appel
+      sqlJsInitPromise = null;
       throw err;
     });
   }
@@ -183,11 +190,16 @@ export async function queueHabitCheckIn(payload: {
   const timestampUtc = now.toISOString();
   const timezoneOffset = now.getTimezoneOffset(); // en minutes
 
-  // On utilise la date fournie comme date logique, sauf si on est en train de valider "aujourd'hui"
-  // Auquel cas on applique la règle de l'oiseau de nuit (Night Owl)
-  const isToday = payload.date === now.toISOString().split('T')[0];
-  const logicalDate = isToday ? getLogicalDayFromUtc(timestampUtc) : payload.date;
+  // Détermination du jour logique actuel (incluant le surci de l'oiseau de nuit)
+  const currentLogicalToday = getLogicalDayFromUtc(timestampUtc);
 
+  // Sécurité : Interdiction de valider dans le futur ou le passé (au-delà du surci)
+  if (payload.date !== currentLogicalToday) {
+    console.error(`Bloom: Tentative de validation hors surci. Cible: ${payload.date}, Actuel: ${currentLogicalToday}`);
+    throw new Error("VALIDATION_OUT_OF_BOUNDS");
+  }
+
+  const logicalDate = currentLogicalToday;
   const validationId = `${payload.habitId}:${logicalDate}`;
 
   // Récupération de l'état actuel pour incrémenter (Correction Spec 7.4 : SQL paramétré)

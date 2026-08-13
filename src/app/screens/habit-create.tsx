@@ -28,6 +28,7 @@ export function HabitCreate() {
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [repetitionsPerDay, setRepetitionsPerDay] = useState(1);
   const [reminderTime, setReminderTime] = useState("09:00");
+  const [reminderTimes, setReminderTimes] = useState<string[]>(["09:00"]);
   const [customReminder, setCustomReminder] = useState("");
   const [enableReminder, setEnableReminder] = useState(true);
   const [durationMinutes, setDurationMinutes] = useState(10);
@@ -48,7 +49,8 @@ export function HabitCreate() {
       setSelectedDays(editingHabit.selectedDays || []);
       setRepetitionsPerDay(editingHabit.repetitionsPerDay || 1);
       setReminderTime(editingHabit.reminderTime || "09:00");
-      setEnableReminder(!!editingHabit.reminderTime);
+      setReminderTimes(editingHabit.reminderTimes || [editingHabit.reminderTime || "09:00"]);
+      setEnableReminder(!!editingHabit.reminderTime || (editingHabit.reminderTimes && editingHabit.reminderTimes.length > 0));
       setCustomReminder(editingHabit.customReminder || "");
       setDurationMinutes(editingHabit.durationMinutes || 10);
       setEffortLevel(editingHabit.effortLevel || "steady");
@@ -95,6 +97,30 @@ export function HabitCreate() {
     setFrequency(f);
   };
 
+  const updateReps = (newReps: number) => {
+    setRepetitionsPerDay(newReps);
+    setReminderTimes(prev => {
+      const next = [...prev];
+      if (newReps > next.length) {
+        for (let i = next.length; i < newReps; i++) {
+          next.push(next[next.length - 1] || "09:00");
+        }
+      } else if (newReps < next.length) {
+        return next.slice(0, newReps);
+      }
+      return next;
+    });
+  };
+
+  const updateReminderTime = (index: number, time: string) => {
+    setReminderTimes(prev => {
+      const next = [...prev];
+      next[index] = time;
+      return next;
+    });
+    if (index === 0) setReminderTime(time);
+  };
+
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
@@ -109,7 +135,8 @@ export function HabitCreate() {
       frequency,
       selectedDays: frequency !== "daily" ? selectedDays : undefined,
       repetitionsPerDay,
-      reminderTime: enableReminder ? reminderTime : null,
+      reminderTime: enableReminder ? reminderTimes[0] : null,
+      reminderTimes: enableReminder ? reminderTimes : [],
       customReminder: customReminder || undefined,
       durationMinutes: durationMinutes || null,
       effortLevel,
@@ -143,7 +170,7 @@ export function HabitCreate() {
   const isFormValid = habitName.trim().length > 0 && (frequency === "daily" || selectedDays.length > 0);
 
   return (
-    <div className="min-h-screen bg-white pb-32">
+    <div className="min-h-dvh bg-white pb-28">
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-gray-50">
         <button
           onClick={() => navigate(-1)}
@@ -268,13 +295,13 @@ export function HabitCreate() {
                   <div className="flex items-center gap-3">
                      <button
                       type="button"
-                      onClick={() => setRepetitionsPerDay(Math.max(1, repetitionsPerDay - 1))}
+                      onClick={() => updateReps(Math.max(1, repetitionsPerDay - 1))}
                       className="w-6 h-6 rounded-full bg-white flex items-center justify-center border border-gray-200 text-[#1C1917] font-bold"
                      >-</button>
                      <span className="font-bold text-[#1C1917] text-sm">{repetitionsPerDay}</span>
                      <button
                       type="button"
-                      onClick={() => setRepetitionsPerDay(repetitionsPerDay + 1)}
+                      onClick={() => updateReps(repetitionsPerDay + 1)}
                       className="w-6 h-6 rounded-full bg-white flex items-center justify-center border border-gray-200 text-[#1C1917] font-bold"
                      >+</button>
                   </div>
@@ -293,27 +320,39 @@ export function HabitCreate() {
                   />
                </div>
 
-               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                     <div className="flex items-center gap-2">
-                        <Bell size={16} className="text-gray-400" />
-                        <span className="font-bold text-sm text-[#1C1917]">{t("reminder")}</span>
+               <div className="flex flex-col gap-3 p-3 bg-gray-50 rounded-xl">
+                  <div className="flex items-center justify-between">
+                     <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                           <Bell size={16} className="text-gray-400" />
+                           <span className="font-bold text-sm text-[#1C1917]">{t("reminder")}</span>
+                        </div>
+                        <button
+                           type="button"
+                           onClick={() => setEnableReminder(!enableReminder)}
+                           className={`w-8 h-4 rounded-full transition-colors relative ${enableReminder ? 'bg-green-500' : 'bg-gray-300'}`}
+                        >
+                           <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${enableReminder ? 'left-4.5' : 'left-0.5'}`} />
+                        </button>
                      </div>
-                     <button
-                        type="button"
-                        onClick={() => setEnableReminder(!enableReminder)}
-                        className={`w-8 h-4 rounded-full transition-colors relative ${enableReminder ? 'bg-green-500' : 'bg-gray-300'}`}
-                     >
-                        <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${enableReminder ? 'left-4.5' : 'left-0.5'}`} />
-                     </button>
                   </div>
+
                   {enableReminder && (
-                    <input
-                      type="time"
-                      value={reminderTime}
-                      onChange={(e) => setReminderTime(e.target.value)}
-                      className="bg-transparent text-right font-bold text-[#1C1917] focus:outline-none text-sm"
-                    />
+                    <div className="space-y-2">
+                      {reminderTimes.map((time, idx) => (
+                        <div key={idx} className="flex items-center justify-between bg-white/50 px-3 py-2 rounded-lg border border-gray-100">
+                          <span className="text-[10px] font-bold text-gray-400 uppercase">
+                            {repetitionsPerDay > 1 ? `${t("reminder")} ${idx + 1}` : t("reminder")}
+                          </span>
+                          <input
+                            type="time"
+                            value={time}
+                            onChange={(e) => updateReminderTime(idx, e.target.value)}
+                            className="bg-transparent text-right font-bold text-[#1C1917] focus:outline-none text-sm"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   )}
                </div>
 

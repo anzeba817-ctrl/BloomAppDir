@@ -28,9 +28,9 @@ export function OnboardingSurvey() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-white px-8 py-12">
+    <div className="flex min-h-dvh flex-col bg-white px-8 pt-4 pb-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-4">
         <button
           onClick={prevStep}
           className="p-2 rounded-full bg-white border border-gray-100 shadow-sm active:scale-90 transition-all"
@@ -48,15 +48,15 @@ export function OnboardingSurvey() {
         <div className="w-10" /> {/* Spacer */}
       </div>
 
-      <div className="flex-1 flex flex-col items-center">
+      <div className="flex-1 flex flex-col items-center justify-center">
         {/* Sunny Mascot */}
         <motion.div
           key={step}
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="mb-8"
+          className="mb-6"
         >
-          <SunnyMascot mood="growing" size={160} />
+          <SunnyMascot mood="growing" size={100} />
         </motion.div>
 
         <AnimatePresence mode="wait">
@@ -65,22 +65,22 @@ export function OnboardingSurvey() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="w-full text-center space-y-8"
+            className="w-full space-y-6"
           >
-            <div className="space-y-4">
-              <h1 className="text-3xl font-bold text-[#1C1917]">
+            <div className="space-y-4 text-center">
+              <h1 className="text-2xl font-bold text-[#1C1917] leading-tight">
                 {step === 1 && t("survey_step1_title")}
                 {step === 2 && t("survey_step2_title")}
                 {step === 3 && t("survey_step3_title")}
               </h1>
-              <p className="text-[#1C1917]/60 font-medium">
+              <p className="text-[#1C1917]/60 font-medium text-sm text-justify">
                 {step === 1 && t("survey_step1_sub")}
                 {step === 2 && t("survey_step2_sub")}
                 {step === 3 && t("survey_step3_sub")}
               </p>
 
-              <div className="inline-block px-4 py-2 bg-[#F5C030]/10 rounded-2xl">
-                <p className="text-[#F5C030] font-bold text-sm">
+              <div className="inline-block px-4 py-2 bg-[#F5C030]/10 rounded-2xl w-full">
+                <p className="text-[#F5C030] font-bold text-xs text-justify">
                    {step === 1 && t("survey_step1_quote")}
                    {step === 2 && t("survey_step2_quote")}
                    {step === 3 && t("survey_step3_quote")}

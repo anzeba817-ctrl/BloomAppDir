@@ -56,8 +56,8 @@ export function PageLayout() {
   }, [navigate]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-white text-foreground">
-      <div className="relative mx-auto min-h-screen max-w-6xl px-0 pb-32 sm:px-4 lg:px-6">
+    <div className="relative min-h-dvh bg-white text-foreground overflow-x-hidden pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
+      <div className="relative mx-auto max-w-6xl px-0 sm:px-4 lg:px-6">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -65,7 +65,6 @@ export function PageLayout() {
             animate={{ opacity: 1, y: 0 }}
             exit={animationsEnabled ? { opacity: 0, y: -10 } : { opacity: 1, y: 0 }}
             transition={{ duration: 0.2 }}
-            className="min-h-screen"
           >
             <Outlet />
           </motion.div>

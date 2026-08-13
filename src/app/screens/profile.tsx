@@ -2,7 +2,7 @@
 
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
-import { Calendar, Sparkles, Lock, TrendingUp } from "lucide-react";
+import { Calendar, Sparkles, Lock, TrendingUp, Camera, Settings as SettingsIcon } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../components/ui/accordion";
 import { SunnyMascot } from "../components/sunny-mascot";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -10,7 +10,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import type { Habit } from "../types/habit";
 import { readLocalCurrency } from "../utils/offline-sync";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { format, subDays, startOfToday, eachDayOfInterval } from "date-fns";
 import { fr, enUS, es } from "date-fns/locale";
 
@@ -20,7 +20,7 @@ import { fr, enUS, es } from "date-fns/locale";
 export function Profile() {
   const navigate = useNavigate();
   const { t, lang } = useLanguage();
-  const { session, logout } = useAuth();
+  const { session, logout, updateUser } = useAuth();
   const user = session.user;
   const userPlan = user?.plan || 'seedling';
   const isPremium = userPlan !== 'seedling';
@@ -28,12 +28,26 @@ export function Profile() {
   const [habits] = useLocalStorage<Habit[]>("bloom-habits", []);
   const [petals, setPetals] = useState(0);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     void (async () => {
       const currency = await readLocalCurrency();
       setPetals(currency.petales);
     })();
   }, []);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      updateUser({ avatarUrl: base64 });
+    };
+    reader.readAsDataURL(file);
+  };
 
   const dateLocale = lang === "fr" ? fr : lang === "es" ? es : enUS;
 
@@ -113,7 +127,31 @@ export function Profile() {
           animate={{ opacity: 1, y: 0 }}
           className="rounded-[32px] border border-gray-100 bg-white p-8 text-center shadow-sm"
         >
-          <SunnyMascot mood="blooming" size={104} className="mx-auto mb-6" />
+          <div className="relative mx-auto mb-6 w-32 h-32 group">
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full h-full rounded-3xl border-4 border-white shadow-md overflow-hidden bg-gray-50 cursor-pointer relative"
+            >
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <img src="assets/logo.png" alt="Bloom Logo" className="w-16 h-16 object-contain opacity-20" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Camera className="text-white w-8 h-8" />
+              </div>
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleAvatarChange}
+            />
+          </div>
+
           <h2 className="mb-2 text-2xl font-bold text-[#1C1917]">{user?.displayName || t("your_journey")}</h2>
           <div className="flex items-center justify-center gap-2 mb-8">
             <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{userPlan}</span>

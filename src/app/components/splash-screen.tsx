@@ -34,12 +34,12 @@ export function SplashScreen() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="absolute bottom-24 text-2xl font-bold tracking-tight text-[#141D24]"
+          className="absolute bottom-12 text-2xl font-bold tracking-tight text-[#141D24]"
         >
           Bloom
         </motion.h1>
       ) : (
-        <h1 className="absolute bottom-24 text-2xl font-bold tracking-tight text-[#141D24]">
+        <h1 className="absolute bottom-12 text-2xl font-bold tracking-tight text-[#141D24]">
           Bloom
         </h1>
       )}

@@ -27,22 +27,22 @@ export function AuthScreen() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-white px-8 py-12 text-center relative">
+    <div className="flex min-h-dvh flex-col bg-white px-8 pt-4 pb-8 text-center relative">
       <button
         onClick={() => navigate("/")}
-        className="absolute left-6 top-10 p-2 rounded-full bg-gray-50 border border-gray-100 shadow-sm active:scale-95 transition-all z-10"
+        className="absolute left-6 top-6 p-2 rounded-full bg-gray-50 border border-gray-100 shadow-sm active:scale-95 transition-all z-10"
       >
         <ChevronLeft size={24} className="text-[#1C1917]" />
       </button>
 
-      <div className="flex-1 flex flex-col items-center justify-start w-full">
+      <div className="flex-1 flex flex-col items-center justify-center w-full">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
-          className="w-full aspect-square flex items-center justify-center -mt-20"
+          className="w-full aspect-square flex items-center justify-center -mt-4"
         >
-          <SunnyMascot mood="blooming" size={450} />
+          <SunnyMascot mood="blooming" size={100} />
         </motion.div>
 
         <motion.div
@@ -51,10 +51,10 @@ export function AuthScreen() {
           transition={{ delay: 0.3, duration: 0.6 }}
           className="space-y-4 px-4 mt-4"
         >
-          <h1 className="text-2xl font-bold text-[#1C1917]">
+          <h1 className="text-2xl font-bold text-[#1C1917] leading-tight text-center">
             {t("onboarding_auth_title") as string}
           </h1>
-          <p className="text-lg leading-relaxed text-[#1C1917] font-medium">
+          <p className="text-lg leading-relaxed text-[#1C1917]/70 font-medium text-justify">
             {t("onboarding_auth_subtitle") as string}
           </p>
         </motion.div>

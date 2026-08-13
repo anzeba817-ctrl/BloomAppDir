@@ -68,106 +68,44 @@
 }
 
 .dark {
-  /* Dark Mode (Ergonomic & Eye-friendly) */
-  --background: var(--bloom-deep-night);
-  --foreground: var(--bloom-sunbeam-cream);
-  --card: oklch(0.25 0.02 70);
-  --card-foreground: var(--bloom-sunbeam-cream);
-  --popover: oklch(0.25 0.02 70);
-  --popover-foreground: var(--bloom-sunbeam-cream);
+  /* Dark Mode (True Black & High Contrast) */
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #121212;
+  --card-foreground: #ffffff;
+  --popover: #121212;
+  --popover-foreground: #ffffff;
 
-  --primary: oklch(0.75 0.15 75); /* Brighter amber for dark bg */
-  --primary-foreground: var(--bloom-deep-night);
+  --primary: oklch(0.85 0.12 75);
+  --primary-foreground: #000000;
 
-  --secondary: oklch(0.65 0.12 145);
-  --secondary-foreground: var(--bloom-deep-night);
+  --secondary: oklch(0.70 0.12 145);
+  --secondary-foreground: #000000;
 
-  --muted: oklch(0.30 0.02 70);
-  --muted-foreground: oklch(0.75 0.03 70);
+  --muted: #1e1e1e;
+  --muted-foreground: #a0a0a0;
 
-  --accent: oklch(0.80 0.15 85);
-  --accent-foreground: var(--bloom-deep-night);
+  --accent: oklch(0.90 0.15 85);
+  --accent-foreground: #000000;
 
-  --destructive: oklch(0.45 0.18 25);
+  --destructive: oklch(0.60 0.18 25);
   --destructive-foreground: #ffffff;
 
-  --border: oklch(0.35 0.02 70);
-  --input: oklch(0.25 0.02 70);
-  --input-background: oklch(0.20 0.02 70);
-  --switch-background: oklch(0.40 0.02 70);
+  --border: #2a2a2a;
+  --input: #121212;
+  --input-background: #0a0a0a;
+  --switch-background: #333333;
 
   --ring: var(--primary);
 
-  --sidebar: oklch(0.18 0.02 70);
-  --sidebar-foreground: var(--bloom-sunbeam-cream);
+  --sidebar: #0a0a0a;
+  --sidebar-foreground: #ffffff;
   --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: var(--bloom-deep-night);
-  --sidebar-accent: oklch(0.25 0.03 70);
-  --sidebar-accent-foreground: var(--bloom-sunbeam-cream);
-  --sidebar-border: oklch(0.25 0.03 70);
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #1e1e1e;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2a2a2a;
   --sidebar-ring: var(--primary);
-}
-
-.forest {
-  /* Forest Theme (Deep Ergonomic Greens) */
-  --background: oklch(0.22 0.04 145);
-  --foreground: oklch(0.95 0.03 145);
-  --card: oklch(0.28 0.05 145);
-  --card-foreground: oklch(0.95 0.03 145);
-  --popover: oklch(0.28 0.05 145);
-  --popover-foreground: oklch(0.95 0.03 145);
-
-  --primary: oklch(0.75 0.14 145);
-  --primary-foreground: oklch(0.15 0.04 145);
-
-  --secondary: oklch(0.60 0.10 145);
-  --secondary-foreground: #ffffff;
-
-  --muted: oklch(0.30 0.04 145);
-  --muted-foreground: oklch(0.75 0.05 145);
-
-  --accent: oklch(0.85 0.12 85);
-  --accent-foreground: oklch(0.20 0.04 145);
-
-  --destructive: oklch(0.50 0.18 25);
-  --destructive-foreground: #ffffff;
-
-  --border: oklch(0.35 0.04 145);
-  --input: oklch(0.25 0.04 145);
-  --input-background: oklch(0.20 0.04 145);
-  --switch-background: oklch(0.45 0.05 145);
-  --ring: var(--primary);
-}
-
-.ocean {
-  /* Ocean Theme (Deep Ergonomic Blues) */
-  --background: oklch(0.20 0.06 245);
-  --foreground: oklch(0.94 0.03 245);
-  --card: oklch(0.26 0.07 245);
-  --card-foreground: oklch(0.94 0.03 245);
-  --popover: oklch(0.26 0.07 245);
-  --popover-foreground: oklch(0.94 0.03 245);
-
-  --primary: oklch(0.72 0.15 230);
-  --primary-foreground: oklch(0.15 0.06 245);
-
-  --secondary: oklch(0.55 0.12 245);
-  --secondary-foreground: #ffffff;
-
-  --muted: oklch(0.28 0.05 245);
-  --muted-foreground: oklch(0.78 0.04 245);
-
-  --accent: oklch(0.82 0.14 210);
-  --accent-foreground: oklch(0.15 0.06 245);
-
-  --destructive: oklch(0.50 0.18 25);
-  --destructive-foreground: #ffffff;
-
-  --border: oklch(0.32 0.06 245);
-  --input: oklch(0.24 0.06 245);
-  --input-background: oklch(0.18 0.06 245);
-  --switch-background: oklch(0.42 0.07 245);
-  --ring: var(--primary);
 }
 
 @theme inline {
@@ -223,6 +161,7 @@
   html {
     font-size: var(--font-size);
     scroll-behavior: smooth;
+    height: -webkit-fill-available;
   }
 
   h1 {

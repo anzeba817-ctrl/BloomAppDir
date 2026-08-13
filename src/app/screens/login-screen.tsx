@@ -27,7 +27,7 @@ export function LoginScreen() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-white px-8 py-8 text-center relative overflow-hidden">
+    <div className="flex min-h-dvh flex-col items-center bg-white px-8 pt-4 pb-8 text-center relative overflow-hidden">
       <button
         onClick={() => navigate("/auth")}
         className="absolute left-6 top-6 p-2 rounded-full bg-gray-50 border border-gray-100 shadow-sm active:scale-95 transition-all z-10"
@@ -35,23 +35,23 @@ export function LoginScreen() {
         <ChevronLeft size={24} className="text-[#1C1917]" />
       </button>
 
-      <div className="flex-1 flex flex-col items-center justify-start w-full max-w-sm">
+      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-sm">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
-          className="w-full aspect-square flex items-center justify-center -mt-12"
+          className="w-full aspect-square flex items-center justify-center -mt-4"
         >
-          <SunnyMascot mood="blooming" size={240} />
+          <SunnyMascot mood="blooming" size={100} />
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.6 }}
-          className="w-full space-y-4 -mt-4"
+          className="w-full space-y-4 mt-2 text-center"
         >
-          <h1 className="text-2xl font-bold text-[#1C1917]">
+          <h1 className="text-2xl font-bold text-[#1C1917] leading-tight">
             {t("login_title") as string}
           </h1>
 

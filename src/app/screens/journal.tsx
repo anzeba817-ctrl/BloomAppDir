@@ -1,16 +1,16 @@
 "use client";
 
 import { motion, AnimatePresence } from "motion/react";
-import { PenLine, X, Trash2, Edit2, ChevronLeft } from "lucide-react";
+import { PenLine, X, Trash2, Edit2, ChevronLeft, Paperclip, Image as ImageIcon, Video, FileText } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useAnimation } from "../contexts/AnimationContext";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 function JournalEntryContent({ entry, formatDate, handleEdit, handleDelete }: any) {
   return (
-    <>
+    <div className="cursor-pointer" onClick={() => handleEdit(entry)}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
@@ -22,36 +22,58 @@ function JournalEntryContent({ entry, formatDate, handleEdit, handleDelete }: an
             </p>
           </div>
         </div>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-1">
           <button
-            onClick={() => handleEdit(entry)}
-            className="p-2 text-gray-400 hover:text-[#1C1917] transition-colors"
-          >
-            <Edit2 size={16} />
-          </button>
-          <button
-            onClick={() => handleDelete(entry.id)}
-            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+            onClick={(e) => { e.stopPropagation(); handleDelete(entry.id); }}
+            className="p-2 text-gray-300 hover:text-red-500 transition-colors"
           >
             <Trash2 size={16} />
           </button>
         </div>
       </div>
-      <p className="text-[#1C1917]/70 leading-relaxed text-sm whitespace-pre-wrap">
+
+      {entry.attachments && entry.attachments.length > 0 && (
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+          {entry.attachments.map((att: any, idx: number) => (
+            <div key={idx} className="shrink-0 w-24 h-24 rounded-xl overflow-hidden bg-gray-100 border border-gray-100 relative group">
+              {att.type === 'image' ? (
+                <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
+              ) : att.type === 'video' ? (
+                <div className="w-full h-full flex items-center justify-center bg-black/5">
+                  <Video size={24} className="text-gray-400" />
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-black/5">
+                  <FileText size={24} className="text-gray-400" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className="text-[#1C1917]/70 leading-relaxed text-sm whitespace-pre-wrap line-clamp-3">
         {entry.text}
       </p>
-    </>
+    </div>
   );
 }
 
 /**
  * Interface pour une entrée de journal.
  */
+interface JournalAttachment {
+  type: 'image' | 'video' | 'file';
+  url: string;
+  name: string;
+}
+
 interface JournalEntry {
   id: string;
   date: string;
   mood: string;
   text: string;
+  attachments?: JournalAttachment[];
 }
 
 /**
@@ -74,12 +96,16 @@ export function Journal() {
   const [showSheet, setShowSheet] = useState(false);
   const [selectedMood, setSelectedMood] = useState("");
   const [text, setText] = useState("");
+  const [attachments, setAttachments] = useState<JournalAttachment[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleOpenNew = () => {
     setEditingId(null);
     setText("");
     setSelectedMood("😊");
+    setAttachments([]);
     setShowSheet(true);
   };
 
@@ -87,26 +113,55 @@ export function Journal() {
     setEditingId(entry.id);
     setText(entry.text);
     setSelectedMood(entry.mood);
+    setAttachments(entry.attachments || []);
     setShowSheet(true);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const url = event.target?.result as string;
+        let type: 'image' | 'video' | 'file' = 'file';
+        if (file.type.startsWith('image/')) type = 'image';
+        else if (file.type.startsWith('video/')) type = 'video';
+
+        setAttachments(prev => [...prev, {
+          type,
+          url,
+          name: file.name
+        }]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeAttachment = (idx: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleSave = () => {
     if (!text.trim()) return;
 
     if (editingId) {
-      setEntries(entries.map(e => e.id === editingId ? { ...e, text, mood: selectedMood } : e));
+      setEntries(entries.map(e => e.id === editingId ? { ...e, text, mood: selectedMood, attachments } : e));
     } else {
       const newEntry: JournalEntry = {
         id: Date.now().toString(),
         date: new Date().toISOString().split("T")[0],
         mood: selectedMood || "😊",
         text,
+        attachments,
       };
       setEntries([newEntry, ...entries]);
     }
 
     setText("");
     setSelectedMood("");
+    setAttachments([]);
     setShowSheet(false);
     setEditingId(null);
   };
@@ -125,7 +180,7 @@ export function Journal() {
   };
 
   return (
-    <div className="min-h-screen bg-white pb-32">
+    <div className="min-h-dvh bg-white pb-28">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md px-6 py-4 flex items-center gap-4 border-b border-gray-50">
         <button
@@ -235,8 +290,53 @@ export function Journal() {
                 onChange={(e) => setText(e.target.value)}
                 placeholder={t("write_placeholder") as string}
                 autoFocus
-                className="w-full min-h-[160px] p-6 rounded-3xl bg-gray-50 border-none focus:ring-2 focus:ring-[#1C1917]/5 text-[#1C1917] font-medium resize-none placeholder:text-gray-300 mb-6"
+                className="w-full min-h-[160px] p-6 rounded-3xl bg-gray-50 border-none focus:ring-2 focus:ring-[#1C1917]/5 text-[#1C1917] font-medium resize-none placeholder:text-gray-300 mb-4"
               />
+
+              {/* Attachments Preview in Editor */}
+              {attachments.length > 0 && (
+                <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+                  {attachments.map((att, idx) => (
+                    <div key={idx} className="shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-gray-100 border border-gray-100 relative group">
+                      {att.type === 'image' ? (
+                        <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
+                      ) : att.type === 'video' ? (
+                        <div className="w-full h-full flex items-center justify-center bg-black/5">
+                          <Video size={20} className="text-gray-400" />
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-black/5">
+                          <FileText size={20} className="text-gray-400" />
+                        </div>
+                      )}
+                      <button
+                        onClick={() => removeAttachment(idx)}
+                        className="absolute top-1 right-1 p-1 bg-black/40 text-white rounded-full backdrop-blur-sm"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex gap-3 mb-6">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,video/*,application/pdf"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-gray-50 border border-gray-100 text-[#1C1917]/60 font-bold text-sm active:scale-95 transition-all"
+                >
+                  <Paperclip size={18} />
+                  {t("attach_files") as string || "Joindre"}
+                </button>
+              </div>
 
               <button
                 onClick={handleSave}

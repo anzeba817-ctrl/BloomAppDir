@@ -203,7 +203,13 @@ export function Dashboard() {
     const dayOfWeek = new Date(selectedDate).getDay();
     return habits
       .filter((h) => {
+        // Filter by mode
         if (h.mode !== currentView) return false;
+
+        // Filter by creation date: only show if selectedDate >= startDate
+        if (h.startDate && selectedDate < h.startDate) return false;
+
+        // Filter by frequency
         if (h.frequency === "daily") return true;
         if (h.frequency === "weekly" || h.frequency === "custom") {
           return h.selectedDays?.includes(dayOfWeek) ?? true;
@@ -383,11 +389,11 @@ export function Dashboard() {
   return (
     <>
       <PullToRefresh onRefresh={async () => { await new Promise(r => setTimeout(r, 1000)); }}>
-        <div className="min-h-screen bg-white text-foreground pb-40 overflow-x-hidden">
-          <header className="px-6 pt-4 pb-4">
-            <div className="flex items-center justify-between mb-6">
-              <button onClick={() => navigate("/habit-calendar")} className="p-2.5 rounded-2xl bg-white shadow-sm border border-gray-100 active:scale-95 transition-all">
-                <CalendarIcon className="w-6 h-6 text-[#1C1917]" />
+        <div className="bg-white text-foreground pb-28 overflow-x-hidden">
+          <header className="pt-4 pb-4">
+            <div className="sticky top-0 z-30 px-6 py-4 bg-white/80 backdrop-blur-xl border-b border-gray-50/50 flex items-center justify-between mb-6">
+              <button onClick={() => navigate("/settings")} className="p-2.5 rounded-2xl bg-white shadow-sm border border-gray-100 active:scale-95 transition-all">
+                <Settings2 className="w-6 h-6 text-[#1C1917]" />
               </button>
 
               <div className="flex items-center gap-3">
@@ -419,46 +425,48 @@ export function Dashboard() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <h1 className="text-2xl font-bold text-[#1C1917]">
-                  {(t("hi_user") as string).replace("{{name}}", userName)} <span className="inline-block animate-wave">👋</span>
-                </h1>
-                <p className="text-[#1C1917]/60 font-medium text-sm mt-1">
-                   {dynamicTagline as string}
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <p className={`text-[10px] font-black uppercase tracking-widest ${currentView === 'build' ? 'text-green-600' : 'text-purple-600'}`}>
-                    {currentView === 'build' ? t("build_mode_label") : t("quit_mode_label")}
+            <div className="px-6">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h1 className="text-2xl font-bold text-[#1C1917]">
+                    {(t("hi_user") as string).replace("{{name}}", userName)} <span className="inline-block animate-wave">👋</span>
+                  </h1>
+                  <p className="text-[#1C1917]/60 font-medium text-sm mt-1">
+                     {dynamicTagline as string}
                   </p>
-                  {isPremium && <Crown size={10} className="text-[#F5C030]" />}
+                  <div className="flex items-center gap-2 mt-2">
+                    <p className={`text-[10px] font-black uppercase tracking-widest ${currentView === 'build' ? 'text-green-600' : 'text-purple-600'}`}>
+                      {currentView === 'build' ? t("build_mode_label") : t("quit_mode_label")}
+                    </p>
+                    {isPremium && <Crown size={10} className="text-[#F5C030]" />}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex justify-center py-4">
-               <SunnyMascot mood={currentMood} size={160} />
-            </div>
+              <div className="flex justify-center py-4">
+                 <SunnyMascot mood={currentMood} size={160} />
+              </div>
 
-            <div className="mt-4 bg-[#F3F4F6] p-1.5 rounded-full flex relative">
-              <button
-                onClick={() => { setCurrentViewWithParam("build"); setShowAll(false); }}
-                className={`flex-1 py-3 rounded-full text-sm font-bold transition-all relative z-10 flex items-center justify-center gap-2 ${
-                  currentView === "build" ? "bg-[#10B981] text-white shadow-md" : "text-[#1C1917]/40"
-                }`}
-              >
-                {t("build_mode") as string}
-                {buildCount > 0 && <span className="text-[10px] font-bold opacity-80">{buildCount}</span>}
-              </button>
-              <button
-                onClick={() => { setCurrentViewWithParam("quit"); setShowAll(false); }}
-                className={`flex-1 py-3 rounded-full text-sm font-bold transition-all relative z-10 flex items-center justify-center gap-2 ${
-                  currentView === "quit" ? "bg-[#8B5CF6] text-white shadow-md" : "text-[#1C1917]/40"
-                }`}
-              >
-                {t("quit_mode") as string}
-                {quitCount > 0 && <span className="text-[10px] font-bold opacity-80">{quitCount}</span>}
-              </button>
+              <div className="mt-4 bg-[#F3F4F6] p-1.5 rounded-full flex relative">
+                <button
+                  onClick={() => { setCurrentViewWithParam("build"); setShowAll(false); }}
+                  className={`flex-1 py-3 rounded-full text-sm font-bold transition-all relative z-10 flex items-center justify-center gap-2 ${
+                    currentView === "build" ? "bg-[#10B981] text-white shadow-md" : "text-[#1C1917]/40"
+                  }`}
+                >
+                  {t("build_mode") as string}
+                  {buildCount > 0 && <span className="text-[10px] font-bold opacity-80">{buildCount}</span>}
+                </button>
+                <button
+                  onClick={() => { setCurrentViewWithParam("quit"); setShowAll(false); }}
+                  className={`flex-1 py-3 rounded-full text-sm font-bold transition-all relative z-10 flex items-center justify-center gap-2 ${
+                    currentView === "quit" ? "bg-[#8B5CF6] text-white shadow-md" : "text-[#1C1917]/40"
+                  }`}
+                >
+                  {t("quit_mode") as string}
+                  {quitCount > 0 && <span className="text-[10px] font-bold opacity-80">{quitCount}</span>}
+                </button>
+              </div>
             </div>
           </header>
 
